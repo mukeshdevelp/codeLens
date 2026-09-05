@@ -1,0 +1,302 @@
+{
+  "pr": {
+    "title": "Fix login redirect bug",
+    "body": "Fixes the redirect after login for OAuth users. Also updates user profile caching."
+  },
+  "riskLevel": "high",
+  "riskScore": 59,
+  "executiveSummary": "High-risk PR (score 59/100). Key concerns: Code Volume, Change & Drift, Functionality, Critical Functionality, Security, Test Coverage. Start with: src/auth/login.ts, src/auth/session.ts, src/payments/billing.ts.",
+  "focusAreas": [
+    {
+      "rank": 1,
+      "area": "src/auth/login.ts",
+      "reason": "Authentication area touched",
+      "severity": "high",
+      "files": [
+        "src/auth/login.ts"
+      ]
+    },
+    {
+      "rank": 2,
+      "area": "src/auth/session.ts",
+      "reason": "Authentication area touched",
+      "severity": "high",
+      "files": [
+        "src/auth/session.ts"
+      ]
+    },
+    {
+      "rank": 3,
+      "area": "src/payments/billing.ts",
+      "reason": "Payments & Billing area touched",
+      "severity": "high",
+      "files": [
+        "src/payments/billing.ts"
+      ]
+    },
+    {
+      "rank": 4,
+      "area": "src/api/routes/users.ts",
+      "reason": "Source changed without test update",
+      "severity": "high",
+      "files": [
+        "src/api/routes/users.ts"
+      ]
+    },
+    {
+      "rank": 5,
+      "area": "src/config/cache.ts",
+      "reason": "Source changed without test update",
+      "severity": "high",
+      "files": [
+        "src/config/cache.ts"
+      ]
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "Code Volume",
+      "score": 15,
+      "summary": "6 files, 245+ / 30-.",
+      "findings": [
+        {
+          "id": "volume-medium",
+          "category": "volume",
+          "severity": "medium",
+          "title": "Above-average PR size",
+          "description": "275 lines changed.",
+          "evidence": {
+            "metric": "275 lines"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Change & Drift",
+      "score": 45,
+      "summary": "Scope signals detected.",
+      "findings": [
+        {
+          "id": "drift-many",
+          "category": "drift",
+          "severity": "medium",
+          "title": "Changes span many modules",
+          "description": "Touches 5 areas.",
+          "evidence": {
+            "metric": "src/api, src/auth, src/config, src/payments, src/utils"
+          }
+        },
+        {
+          "id": "drift-unrelated",
+          "category": "drift",
+          "severity": "medium",
+          "title": "Possible scope drift",
+          "description": "Title may not cover all changed areas.",
+          "evidence": {
+            "metric": "Fix login redirect bug"
+          }
+        },
+        {
+          "id": "drift-multi",
+          "category": "drift",
+          "severity": "low",
+          "title": "Multiple functional areas changed",
+          "description": "5 clusters.",
+          "evidence": {
+            "metric": "src/auth, src/payments, src/api, src/config, src/utils"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Functionality",
+      "score": 40,
+      "summary": "5 functional area(s).",
+      "findings": [
+        {
+          "id": "func-scattered",
+          "category": "functionality",
+          "severity": "medium",
+          "title": "Scattered functionality",
+          "description": "Multiple modules changed.",
+          "evidence": {
+            "metric": "src/auth, src/payments, src/api, src/config, src/utils"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Critical Functionality",
+      "score": 84,
+      "summary": "Touches: Public API Surface, Permissions & Access Control, Payments & Billing, Authentication, Infrastructure & Config.",
+      "findings": [
+        {
+          "id": "critical-auth-src/auth/login.ts",
+          "category": "critical",
+          "severity": "high",
+          "title": "Authentication area touched",
+          "description": "Review authentication changes.",
+          "evidence": {
+            "file": "src/auth/login.ts"
+          }
+        },
+        {
+          "id": "critical-infra-src/auth/login.ts",
+          "category": "critical",
+          "severity": "medium",
+          "title": "Infrastructure & Config area touched",
+          "description": "Review infrastructure & config changes.",
+          "evidence": {
+            "file": "src/auth/login.ts"
+          }
+        },
+        {
+          "id": "critical-auth-src/auth/session.ts",
+          "category": "critical",
+          "severity": "high",
+          "title": "Authentication area touched",
+          "description": "Review authentication changes.",
+          "evidence": {
+            "file": "src/auth/session.ts"
+          }
+        },
+        {
+          "id": "critical-permissions-src/auth/session.ts",
+          "category": "critical",
+          "severity": "high",
+          "title": "Permissions & Access Control area touched",
+          "description": "Review permissions & access control changes.",
+          "evidence": {
+            "file": "src/auth/session.ts"
+          }
+        },
+        {
+          "id": "critical-payments-src/payments/billing.ts",
+          "category": "critical",
+          "severity": "high",
+          "title": "Payments & Billing area touched",
+          "description": "Review payments & billing changes.",
+          "evidence": {
+            "file": "src/payments/billing.ts"
+          }
+        },
+        {
+          "id": "critical-api-src/api/routes/users.ts",
+          "category": "critical",
+          "severity": "medium",
+          "title": "Public API Surface area touched",
+          "description": "Review public api surface changes.",
+          "evidence": {
+            "file": "src/api/routes/users.ts"
+          }
+        },
+        {
+          "id": "critical-infra-src/config/cache.ts",
+          "category": "critical",
+          "severity": "medium",
+          "title": "Infrastructure & Config area touched",
+          "description": "Review infrastructure & config changes.",
+          "evidence": {
+            "file": "src/config/cache.ts"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Security",
+      "score": 33,
+      "summary": "1 security signal(s).",
+      "findings": [
+        {
+          "id": "sec-hardcoded-fallback-src/auth/login.ts-2",
+          "category": "security",
+          "severity": "high",
+          "title": "Possible secret: Hardcoded fallback secret",
+          "description": "Added line may contain a credential.",
+          "evidence": {
+            "file": "src/auth/login.ts",
+            "line": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "Test Coverage",
+      "score": 100,
+      "summary": "No test changes.",
+      "findings": [
+        {
+          "id": "test-gap-src/auth/login.ts",
+          "category": "tests",
+          "severity": "high",
+          "title": "Source changed without test update",
+          "description": "No matching test file in PR.",
+          "evidence": {
+            "file": "src/auth/login.ts"
+          }
+        },
+        {
+          "id": "test-gap-src/auth/session.ts",
+          "category": "tests",
+          "severity": "high",
+          "title": "Source changed without test update",
+          "description": "No matching test file in PR.",
+          "evidence": {
+            "file": "src/auth/session.ts"
+          }
+        },
+        {
+          "id": "test-gap-src/payments/billing.ts",
+          "category": "tests",
+          "severity": "high",
+          "title": "Source changed without test update",
+          "description": "No matching test file in PR.",
+          "evidence": {
+            "file": "src/payments/billing.ts"
+          }
+        },
+        {
+          "id": "test-gap-src/api/routes/users.ts",
+          "category": "tests",
+          "severity": "high",
+          "title": "Source changed without test update",
+          "description": "No matching test file in PR.",
+          "evidence": {
+            "file": "src/api/routes/users.ts"
+          }
+        },
+        {
+          "id": "test-gap-src/config/cache.ts",
+          "category": "tests",
+          "severity": "high",
+          "title": "Source changed without test update",
+          "description": "No matching test file in PR.",
+          "evidence": {
+            "file": "src/config/cache.ts"
+          }
+        },
+        {
+          "id": "test-gap-src/utils/helpers.ts",
+          "category": "tests",
+          "severity": "medium",
+          "title": "Source changed without test update",
+          "description": "No matching test file in PR.",
+          "evidence": {
+            "file": "src/utils/helpers.ts"
+          }
+        },
+        {
+          "id": "test-none",
+          "category": "tests",
+          "severity": "medium",
+          "title": "No test files in PR",
+          "description": "Source changed without test updates.",
+          "evidence": {
+            "metric": "6"
+          }
+        }
+      ]
+    }
+  ],
+  "generatedAt": "2026-09-05T09:10:14.916004+00:00"
+}

@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 620" font-family="Inter, system-ui, sans-serif">
+  <defs>
+    <marker id="arrowSeq" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <polygon points="0 0, 10 4, 0 8" fill="#5b8cff"/>
+    </marker>
+    <marker id="arrowReturn" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <polygon points="0 0, 10 4, 0 8" fill="#06d6a0"/>
+    </marker>
+  </defs>
+
+  <rect width="960" height="620" fill="#0b1020"/>
+  <text x="480" y="36" text-anchor="middle" fill="#eef2ff" font-size="20" font-weight="700">PR Analysis Request Flow</text>
+
+  <!-- Participants -->
+  <rect x="30" y="60" width="110" height="36" rx="8" fill="#243044" stroke="#5b8cff"/>
+  <text x="85" y="83" text-anchor="middle" fill="#eef2ff" font-size="12" font-weight="600">User</text>
+  <line x1="85" y1="96" x2="85" y2="580" stroke="#2a3654" stroke-width="2" stroke-dasharray="6 4"/>
+
+  <rect x="170" y="60" width="110" height="36" rx="8" fill="#243044" stroke="#7c5cff"/>
+  <text x="225" y="83" text-anchor="middle" fill="#eef2ff" font-size="12" font-weight="600">Frontend</text>
+  <line x1="225" y1="96" x2="225" y2="580" stroke="#2a3654" stroke-width="2" stroke-dasharray="6 4"/>
+
+  <rect x="310" y="60" width="110" height="36" rx="8" fill="#243044" stroke="#ffd166"/>
+  <text x="365" y="83" text-anchor="middle" fill="#eef2ff" font-size="12" font-weight="600">FastAPI</text>
+  <line x1="365" y1="96" x2="365" y2="580" stroke="#2a3654" stroke-width="2" stroke-dasharray="6 4"/>
+
+  <rect x="450" y="60" width="110" height="36" rx="8" fill="#243044" stroke="#ff6b6b"/>
+  <text x="505" y="83" text-anchor="middle" fill="#eef2ff" font-size="12" font-weight="600">GitHub</text>
+  <line x1="505" y1="96" x2="505" y2="580" stroke="#2a3654" stroke-width="2" stroke-dasharray="6 4"/>
+
+  <rect x="590" y="60" width="110" height="36" rx="8" fill="#243044" stroke="#06d6a0"/>
+  <text x="645" y="83" text-anchor="middle" fill="#eef2ff" font-size="12" font-weight="600">Analyzers</text>
+  <line x1="645" y1="96" x2="645" y2="580" stroke="#2a3654" stroke-width="2" stroke-dasharray="6 4"/>
+
+  <rect x="730" y="60" width="90" height="36" rx="8" fill="#243044" stroke="#9aa8c7"/>
+  <text x="775" y="83" text-anchor="middle" fill="#eef2ff" font-size="12" font-weight="600">SQLite</text>
+  <line x1="775" y1="96" x2="775" y2="580" stroke="#2a3654" stroke-width="2" stroke-dasharray="6 4"/>
+
+  <!-- Phase labels -->
+  <rect x="30" y="115" width="130" height="22" rx="4" fill="#1a2440" stroke="#5b8cff"/>
+  <text x="95" y="130" text-anchor="middle" fill="#5b8cff" font-size="10" font-weight="600">LOGIN</text>
+
+  <!-- Login flow -->
+  <line x1="85" y1="155" x2="220" y2="155" stroke="#5b8cff" stroke-width="1.5" marker-end="url(#arrowSeq)"/>
+  <text x="130" y="148" fill="#9aa8c7" font-size="10">Login with GitHub</text>
+
+  <line x1="225" y1="175" x2="360" y2="175" stroke="#5b8cff" stroke-width="1.5" marker-end="url(#arrowSeq)"/>
+  <text x="265" y="168" fill="#9aa8c7" font-size="10">GET /auth/github</text>
+
+  <line x1="365" y1="195" x2="500" y2="195" stroke="#5b8cff" stroke-width="1.5" marker-end="url(#arrowSeq)"/>
+  <text x="400" y="188" fill="#9aa8c7" font-size="10">OAuth redirect</text>
+
+  <line x1="500" y1="215" x2="370" y2="215" stroke="#06d6a0" stroke-width="1.5" marker-end="url(#arrowReturn)"/>
+  <text x="410" y="208" fill="#9aa8c7" font-size="10">access token</text>
+
+  <line x1="365" y1="235" x2="230" y2="235" stroke="#06d6a0" stroke-width="1.5" marker-end="url(#arrowReturn)"/>
+  <text x="255" y="228" fill="#9aa8c7" font-size="10">session cookie</text>
+
+  <line x1="225" y1="255" x2="90" y2="255" stroke="#06d6a0" stroke-width="1.5" marker-end="url(#arrowReturn)"/>
+  <text x="130" y="248" fill="#9aa8c7" font-size="10">redirect /dashboard</text>
+
+  <!-- Analyze phase -->
+  <rect x="30" y="280" width="150" height="22" rx="4" fill="#1a2440" stroke="#06d6a0"/>
+  <text x="105" y="295" text-anchor="middle" fill="#06d6a0" font-size="10" font-weight="600">ANALYZE PR</text>
+
+  <line x1="85" y1="320" x2="220" y2="320" stroke="#5b8cff" stroke-width="1.5" marker-end="url(#arrowSeq)"/>
+  <text x="115" y="313" fill="#9aa8c7" font-size="10">Select PR ’ Analyze</text>
+
+  <line x1="225" y1="345" x2="360" y2="345" stroke="#5b8cff" stroke-width="1.5" marker-end="url(#arrowSeq)"/>
+  <text x="255" y="338" fill="#9aa8c7" font-size="9">POST .../pulls/{n}/analyze</text>
+
+  <line x1="365" y1="370" x2="500" y2="370" stroke="#5b8cff" stroke-width="1.5" marker-end="url(#arrowSeq)"/>
+  <text x="395" y="363" fill="#9aa8c7" font-size="10">Fetch PR + diff files</text>
+
+  <line x1="500" y1="390" x2="370" y2="390" stroke="#06d6a0" stroke-width="1.5" marker-end="url(#arrowReturn)"/>
+  <text x="405" y="383" fill="#9aa8c7" font-size="10">PR data + patches</text>
+
+  <line x1="365" y1="415" x2="640" y2="415" stroke="#5b8cff" stroke-width="1.5" marker-end="url(#arrowSeq)"/>
+  <text x="470" y="408" fill="#9aa8c7" font-size="10">Run all dimensions</text>
+
+  <line x1="645" y1="435" x2="370" y2="435" stroke="#06d6a0" stroke-width="1.5" marker-end="url(#arrowReturn)"/>
+  <text x="470" y="428" fill="#9aa8c7" font-size="10">findings + risk score</text>
+
+  <line x1="365" y1="460" x2="770" y2="460" stroke="#5b8cff" stroke-width="1.5" marker-end="url(#arrowSeq)"/>
+  <text x="530" y="453" fill="#9aa8c7" font-size="10">Cache report</text>
+
+  <line x1="365" y1="490" x2="230" y2="490" stroke="#06d6a0" stroke-width="1.5" marker-end="url(#arrowReturn)"/>
+  <text x="265" y="483" fill="#9aa8c7" font-size="10">Analysis report JSON</text>
+
+  <line x1="225" y1="515" x2="90" y2="515" stroke="#06d6a0" stroke-width="1.5" marker-end="url(#arrowReturn)"/>
+  <text x="115" y="508" fill="#9aa8c7" font-size="10">Risk, focus areas, breakdown</text>
+
+  <!-- Output box -->
+  <rect x="30" y="545" width="900" height="55" rx="8" fill="#121a2f" stroke="#2a3654"/>
+  <text x="50" y="568" fill="#9aa8c7" font-size="11" font-weight="600">Report includes:</text>
+  <text x="50" y="588" fill="#eef2ff" font-size="11">Risk level (High/Medium/Low) · Executive summary · Top 5 focus areas · Dimension breakdown (volume, drift, security, tests, critical paths)</text>
+</svg>

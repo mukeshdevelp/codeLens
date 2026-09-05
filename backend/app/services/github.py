@@ -1,0 +1,103 @@
+from __future__ import annotations
+
+from typing import Any
+
+import httpx
+
+from app.analyzers.types import FileChange
+from app.config import settings
+
+
+class GitHubClient:
+    def __init__(self, access_token: str):
+        self.access_token = access_token
+        self.base = "https://api.github.com"
+
+    def _headers(self) -> dict[str, str]:
+        return {
+            "Authorization": f"Bearer {self.access_token}",
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+        }
+
+    async def get_user(self) -> dict[str, Any]:
+        async with httpx.AsyncClient(timeout=30) as client:
+            res = await client.get(f"{self.base}/user", headers=self._headers())
+            res.raise_for_status()
+            return res.json()
+
+    async def list_repos(self, page: int = 1, per_page: int = 30) -> list[dict[str, Any]]:
+        async with httpx.AsyncClient(timeout=30) as client:
+            res = await client.get(
+                f"{self.base}/user/repos",
+                headers=self._headers(),
+                params={"sort": "updated", "per_page": per_page, "page": page, "affiliation": "owner,collaborator,organization_member"},
+            )
+            res.raise_for_status()
+            return res.json()
+
+    async def list_pulls(self, owner: str, repo: str, state: str = "open") -> list[dict[str, Any]]:
+        async with httpx.AsyncClient(timeout=30) as client:
+            res = await client.get(
+                f"{self.base}/repos/{owner}/{repo}/pulls",
+                headers=self._headers(),
+                params={"state": state, "per_page": 30, "sort": "updated"},
+            )
+            res.raise_for_status()
+            return res.json()
+
+    async def get_pull(self, owner: str, repo: str, number: int) -> dict[str, Any]:
+        async with httpx.AsyncClient(timeout=30) as client:
+            res = await client.get(f"{self.base}/repos/{owner}/{repo}/pulls/{number}", headers=self._headers())
+            res.raise_for_status()
+            return res.json()
+
+    async def list_pr_files(self, owner: str, repo: str, number: int) -> list[FileChange]:
+        async with httpx.AsyncClient(timeout=30) as client:
+            res = await client.get(
+                f"{self.base}/repos/{owner}/{repo}/pulls/{number}/files",
+                headers=self._headers(),
+                params={"per_page": 100},
+            )
+            res.raise_for_status()
+            data = res.json()
+            return [
+                FileChange(
+                    filename=item["filename"],
+                    status=item["status"],
+                    additions=item.get("additions", 0),
+                    deletions=item.get("deletions", 0),
+                    patch=item.get("patch"),
+                )
+                for item in data
+            ]
+
+
+def github_oauth_url(state: str) -> str:
+    scopes = "read:user repo"
+    return (
+        "https://github.com/login/oauth/authorize"
+        f"?client_id={settings.github_client_id}"
+        f"&redirect_uri={settings.github_redirect_uri}"
+        f"&scope={scopes.replace(' ', '%20')}"
+        f"&state={state}"
+    )
+
+
+async def exchange_code_for_token(code: str) -> str:
+    async with httpx.AsyncClient(timeout=30) as client:
+        res = await client.post(
+            "https://github.com/login/oauth/access_token",
+            headers={"Accept": "application/json"},
+            json={
+                "client_id": settings.github_client_id,
+                "client_secret": settings.github_client_secret,
+                "code": code,
+                "redirect_uri": settings.github_redirect_uri,
+            },
+        )
+        res.raise_for_status()
+        data = res.json()
+        if "error" in data:
+            raise ValueError(data.get("error_description", data["error"]))
+        return data["access_token"]
