@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import re
 from typing import Any
@@ -87,15 +88,67 @@ def rule_based_discussion_summary(activity: list[dict[str, Any]]) -> str:
 async def _ai_file_summary(f: FileChange) -> str | None:
     preview = _patch_preview(f.patch, max_lines=35)
     prompt = (
-        f"Summarize this file change in 1-2 clear sentences for a code reviewer. "
-        f"Say what changed and why it matters. No bullet points.\n\n"
-        f"File: {f.filename}\nStatus: {f.status}\nLines: +{f.additions} / -{f.deletions}\n\n"
+        f"You are CodeLens, a PR review assistant. Summarize what this file change does.\n"
+        f"Rules:\n"
+        f"- Exactly 1-2 sentences, plain text\n"
+        f"- Start with the filename: {f.filename}\n"
+        f"- Name specific tech/tools from the diff (e.g. kubeadm, Tailscale, Calico)\n"
+        f"- Do NOT use generic phrases like 'comprehensive guide', 'step-by-step instructions', "
+        f"or 'this document provides'\n"
+        f"- Write as a code reviewer, not as GitHub Copilot\n\n"
+        f"Change type: {f.status} | Lines: +{f.additions} / -{f.deletions}\n\n"
     )
     if preview:
-        prompt += f"Diff preview:\n{preview[:2500]}"
+        prompt += f"Diff excerpt:\n{preview[:2500]}"
     else:
-        prompt += "No diff available — summarize based on filename and stats only."
-    return await ai_complete(prompt, system="You write concise file change summaries like CodeRabbit.", max_tokens=300)
+        prompt += "No diff available — infer from filename and change stats."
+    return await ai_complete(
+        prompt,
+        system="CodeLens file-change summarizer. Concise, technical, distinct per file.",
+        max_tokens=200,
+    )
+
+
+async def _ai_summarize_all_files(files: list[FileChange]) -> dict[str, str]:
+    """One Groq call for all files — faster and more distinct summaries."""
+    if not ai_is_configured() or not files:
+        return {}
+
+    items = []
+    for f in sorted(files, key=lambda x: x.additions + x.deletions, reverse=True)[:MAX_AI_FILE_SUMMARIES]:
+        preview = _patch_preview(f.patch, max_lines=20)
+        items.append({
+            "filename": f.filename,
+            "status": f.status,
+            "additions": f.additions,
+            "deletions": f.deletions,
+            "diffExcerpt": preview[:1200] if preview else "",
+        })
+
+    prompt = (
+        "For each file below, write a UNIQUE 1-2 sentence summary of what that file adds or changes. "
+        "Each summary must be different — focus on that file's specific purpose. "
+        "Return ONLY valid JSON: {\"summaries\": [{\"filename\": \"...\", \"summary\": \"...\"}]}\n\n"
+        + json.dumps({"files": items}, indent=2)
+    )
+    raw = await ai_complete(
+        prompt,
+        system="You return JSON only. Summarize each changed file distinctly for a PR walkthrough.",
+        max_tokens=1200,
+    )
+    if not raw:
+        return {}
+
+    try:
+        text = raw.strip()
+        if text.startswith("```"):
+            text = re.sub(r"^```(?:json)?\s*", "", text)
+            text = re.sub(r"\s*```$", "", text)
+        data = json.loads(text)
+        rows = data.get("summaries") or data.get("files") or []
+        return {r["filename"]: r["summary"] for r in rows if r.get("filename") and r.get("summary")}
+    except (json.JSONDecodeError, KeyError, TypeError):
+        return {}
 
 
 async def summarize_pr_overview(title: str, body: str | None, files: list[FileChange]) -> tuple[str, bool]:
@@ -117,21 +170,39 @@ async def summarize_pr_overview(title: str, body: str | None, files: list[FileCh
 
 
 async def summarize_file_changes(files: list[FileChange]) -> tuple[list[dict[str, Any]], int]:
-    """Per-file walkthrough summaries with diff patches (CodeRabbit-style)."""
+    """Per-file walkthrough summaries with diff patches. Calls Groq once per file, then caches in DB via analyze."""
+    from datetime import datetime, timezone
+
+    from app.config import settings
+
     ranked = sorted(files, key=lambda f: f.additions + f.deletions, reverse=True)
     results: list[dict[str, Any]] = []
     ai_count = 0
+    provider = settings.resolved_ai_provider() if ai_is_configured() else ""
+    now = datetime.now(timezone.utc).isoformat()
 
-    for i, f in enumerate(ranked):
+    # Parallel Groq calls — one per file (reliable; batch JSON often fails on reasoning models)
+    ai_map: dict[str, str] = {}
+    if ai_is_configured():
+        targets = ranked[:MAX_AI_FILE_SUMMARIES]
+
+        async def _summarize_one(file_change: FileChange) -> tuple[str, str | None]:
+            text = await _ai_file_summary(file_change)
+            return file_change.filename, text
+
+        pairs = await asyncio.gather(*[_summarize_one(f) for f in targets])
+        ai_map = {name: text for name, text in pairs if text}
+
+    for f in ranked:
         summary = rule_based_file_summary(f)
         used_ai = False
+        summarized_at = ""
 
-        if ai_is_configured() and i < MAX_AI_FILE_SUMMARIES:
-            ai = await _ai_file_summary(f)
-            if ai:
-                summary = ai
-                used_ai = True
-                ai_count += 1
+        if f.filename in ai_map:
+            summary = ai_map[f.filename]
+            used_ai = True
+            summarized_at = now
+            ai_count += 1
 
         results.append(
             {
@@ -141,6 +212,8 @@ async def summarize_file_changes(files: list[FileChange]) -> tuple[list[dict[str
                 "deletions": f.deletions,
                 "summary": summary,
                 "summarySource": "ai" if used_ai else "rules",
+                "summaryProvider": provider if used_ai else "",
+                "summarizedAt": summarized_at,
                 "patch": f.patch or "",
                 "truncated": bool(f.patch and len(f.patch.splitlines()) > 500),
             }

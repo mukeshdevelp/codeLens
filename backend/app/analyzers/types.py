@@ -52,6 +52,8 @@ class FileChangeSummary:
     patch: str = ""
     truncated: bool = False
     summary_source: str = "rules"
+    summary_provider: str = ""
+    summarized_at: str = ""
 
 
 @dataclass
@@ -97,6 +99,8 @@ class AnalysisReport:
                     "deletions": f.deletions,
                     "summary": f.summary,
                     "summarySource": f.summary_source,
+                    "summaryProvider": f.summary_provider,
+                    "summarizedAt": f.summarized_at,
                     "patch": f.patch,
                     "truncated": f.truncated,
                 }

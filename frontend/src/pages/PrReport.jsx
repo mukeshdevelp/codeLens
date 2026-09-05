@@ -46,10 +46,18 @@ export default function PrReport() {
   const [aiStatus, setAiStatus] = useState(null);
   const prNumber = Number(number);
 
-  const isStaleReport = (data) => {
+  const isStaleReport = (data, status) => {
     if (!data) return true;
     if (!data.fileChanges?.length && (data.pr?.changedFiles ?? 0) > 0) return true;
     if (!("aiProvider" in data)) return true;
+    if (data.fileChanges?.some((f) => !("summarySource" in f))) return true;
+    // Groq configured but cache has no AI file summaries — run analyze once and save to DB
+    if (status?.configured) {
+      const hasAiFileSummary = data.fileChanges?.some((f) => f.summarySource === "ai");
+      if (!hasAiFileSummary || !data.aiSummariesUsed) return true;
+      // Old Groq cache before per-file timestamp — re-run once and save fresh summaries
+      if (data.fileChanges?.some((f) => f.summarySource === "ai" && !f.summarizedAt)) return true;
+    }
     return false;
   };
 
@@ -74,10 +82,14 @@ export default function PrReport() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      const status = await api.aiStatus().catch(() => null);
+      if (cancelled) return;
+      setAiStatus(status);
+
       try {
         const data = await api.report(owner, repo, prNumber);
         if (cancelled) return;
-        if (isStaleReport(data)) {
+        if (isStaleReport(data, status)) {
           await runAnalyze();
           return;
         }
@@ -179,7 +191,7 @@ export default function PrReport() {
               <p className="muted panel-intro">
                 File-by-file summary with diffs — like CodeRabbit. Expand any file to see what changed.
               </p>
-              <FileWalkthrough files={report.fileChanges || []} />
+              <FileWalkthrough files={report.fileChanges || []} aiProvider={report.aiProvider} />
             </section>
           )}
 
@@ -206,15 +218,25 @@ export default function PrReport() {
                       <span>{dim.name}</span>
                       <span className="dim-score">{dim.score}</span>
                     </summary>
-                    <p className="muted">{dim.summary}</p>
-                    <ul>
-                      {dim.findings.length === 0 && <li className="muted">No findings</li>}
+                    <p className="dim-summary">{dim.summary}</p>
+                    <ul className="finding-list">
+                      {dim.findings.length === 0 && <li className="finding-empty muted">No findings</li>}
                       {dim.findings.map((f) => (
-                        <li key={f.id} className={`finding sev-${f.severity}`}>
-                          <span className="badge">{f.severity}</span>
-                          <strong>{f.title}</strong>
-                          <span>{f.description}</span>
-                          {f.evidence?.file && <code>{f.evidence.file}</code>}
+                        <li key={f.id} className={`finding-card sev-${f.severity}`}>
+                          <div className="finding-header">
+                            <span className={`badge badge-${f.severity}`}>{f.severity}</span>
+                            <strong className="finding-title">{f.title}</strong>
+                          </div>
+                          <p className="finding-desc">{f.description}</p>
+                          {f.evidence?.file && (
+                            <div className="finding-file">
+                              <span className="finding-file-label">File</span>
+                              <code>{f.evidence.file}</code>
+                            </div>
+                          )}
+                          {f.evidence?.metric && !f.evidence?.file && (
+                            <div className="finding-metric muted">{f.evidence.metric}</div>
+                          )}
                         </li>
                       ))}
                     </ul>

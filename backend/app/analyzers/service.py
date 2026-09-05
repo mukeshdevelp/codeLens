@@ -95,6 +95,8 @@ async def analyze_pull_request(
             patch=fc.get("patch", ""),
             truncated=fc.get("truncated", False),
             summary_source=fc.get("summarySource", "rules"),
+            summary_provider=fc.get("summaryProvider", ""),
+            summarized_at=fc.get("summarizedAt", ""),
         )
         for fc in file_change_dicts
     ]
