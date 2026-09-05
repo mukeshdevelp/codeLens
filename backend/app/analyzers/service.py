@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-import json
 from datetime import datetime, timezone
 
-import httpx
-
-from app.analyzers.ai import summarize_with_cursor
+from app.analyzers.ai import ai_is_configured, summarize_with_cursor
 from app.analyzers.engine import (
     analyze_functionality,
     analyze_volume,
@@ -18,11 +15,25 @@ from app.analyzers.engine import (
     rule_based_summary,
     scan_security,
 )
-from app.analyzers.types import AnalysisReport, FileChange, FocusArea
+from app.analyzers.summarize import (
+    rule_based_discussion_summary,
+    rule_based_pr_overview,
+    summarize_discussion,
+    summarize_file_changes,
+    summarize_pr_overview,
+)
+from app.analyzers.types import AnalysisReport, FileChange, FileChangeSummary, FocusArea, ReviewActivity
 from app.config import settings
 
 
-async def analyze_pull_request(title: str, body: str | None, files: list[FileChange], use_ai: bool = True) -> AnalysisReport:
+async def analyze_pull_request(
+    title: str,
+    body: str | None,
+    files: list[FileChange],
+    use_ai: bool = True,
+    pr_meta: dict | None = None,
+    review_activity: list[dict] | None = None,
+) -> AnalysisReport:
     dimensions = [
         analyze_volume(files),
         detect_scope_drift(title, body, files),
@@ -37,60 +48,88 @@ async def analyze_pull_request(title: str, body: str | None, files: list[FileCha
     focus_raw = build_focus_areas(all_findings)
     focus_areas = [FocusArea(**f) for f in focus_raw]
     summary = rule_based_summary(risk_level_value, risk_score, dimensions, focus_raw)
+    exec_source = "rules"
 
-    if use_ai:
+    if use_ai and ai_is_configured():
         try:
-            if settings.cursor_api_key:
-                summary = await summarize_with_cursor(title, body, risk_level_value, dimensions, focus_raw)
-            elif settings.openai_api_key:
-                summary = await _openai_summarize(title, body, risk_level_value, dimensions, focus_raw)
+            ai_summary, used_ai_exec = await summarize_with_cursor(title, body, risk_level_value, dimensions, focus_raw)
+            summary = ai_summary
+            if used_ai_exec:
+                exec_source = "ai"
         except Exception:
             pass
 
+    pr_overview = rule_based_pr_overview(title, body, files)
+    discussion_summary = rule_based_discussion_summary(review_activity or [])
+    file_change_dicts: list[dict] = []
+    ai_file_count = 0
+
+    if use_ai:
+        pr_overview, _ = await summarize_pr_overview(title, body, files)
+        file_change_dicts, ai_file_count = await summarize_file_changes(files)
+        discussion_summary, _ = await summarize_discussion(review_activity or [])
+    else:
+        from app.analyzers.summarize import rule_based_file_summary
+
+        file_change_dicts = [
+            {
+                "filename": f.filename,
+                "status": f.status,
+                "additions": f.additions,
+                "deletions": f.deletions,
+                "summary": rule_based_file_summary(f),
+                "summarySource": "rules",
+                "patch": f.patch or "",
+                "truncated": bool(f.patch and len(f.patch.splitlines()) > 500),
+            }
+            for f in files
+        ]
+
+    file_changes = [
+        FileChangeSummary(
+            filename=fc["filename"],
+            status=fc["status"],
+            additions=fc["additions"],
+            deletions=fc["deletions"],
+            summary=fc["summary"],
+            patch=fc.get("patch", ""),
+            truncated=fc.get("truncated", False),
+            summary_source=fc.get("summarySource", "rules"),
+        )
+        for fc in file_change_dicts
+    ]
+
+    activity = review_activity or []
+    review_items = [
+        ReviewActivity(
+            type=a.get("type", "comment"),
+            author=a.get("author", "unknown"),
+            body=a.get("body", ""),
+            created_at=a.get("createdAt", ""),
+            state=a.get("state"),
+            file=a.get("file"),
+            line=a.get("line"),
+        )
+        for a in activity
+    ]
+
+    pr_data: dict = {"title": title, "body": body}
+    if pr_meta:
+        pr_data.update(pr_meta)
+
     return AnalysisReport(
-        pr={"title": title, "body": body},
+        pr=pr_data,
         risk_level=risk_level_value,  # type: ignore[arg-type]
         risk_score=risk_score,
         executive_summary=summary,
         focus_areas=focus_areas,
         dimensions=dimensions,
         generated_at=datetime.now(timezone.utc).isoformat(),
+        pr_overview=pr_overview,
+        file_changes=file_changes,
+        discussion_summary=discussion_summary,
+        review_activity=review_items,
+        ai_provider=settings.resolved_ai_provider() if ai_is_configured() else "",
+        ai_summaries_used=ai_file_count + (1 if exec_source == "ai" else 0),
+        executive_summary_source=exec_source,
     )
-
-
-async def _openai_summarize(title: str, body: str | None, risk_level_value: str, dimensions, focus_areas) -> str:
-    payload = {
-        "title": title,
-        "body": (body or "")[:500],
-        "riskLevel": risk_level_value,
-        "focusAreas": focus_areas,
-        "dimensions": [
-            {
-                "dimension": d.name,
-                "summary": d.summary,
-                "findings": [{"severity": f.severity, "title": f.title, "file": f.evidence.get("file")} for f in d.findings[:5]],
-            }
-            for d in dimensions
-        ],
-    }
-    prompt = (
-        "Summarize this pull request analysis for a code reviewer in 3-5 sentences. "
-        "Use ONLY the JSON data. State risk, what changed, and where to focus. Do not invent issues.\n\n"
-        + json.dumps(payload, indent=2)
-    )
-    async with httpx.AsyncClient(timeout=30) as client:
-        res = await client.post(
-            "https://api.openai.com/v1/chat/completions",
-            headers={"Authorization": f"Bearer {settings.openai_api_key}"},
-            json={
-                "model": settings.openai_model,
-                "temperature": 0.2,
-                "max_tokens": 300,
-                "messages": [
-                    {"role": "system", "content": "You summarize PR analysis for reviewers."},
-                    {"role": "user", "content": prompt},
-                ],
-            },
-        )
-        res.raise_for_status()
-        return res.json()["choices"][0]["message"]["content"].strip()

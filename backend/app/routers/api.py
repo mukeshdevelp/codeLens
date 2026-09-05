@@ -11,9 +11,24 @@ from app.analyzers.service import analyze_pull_request
 from app.database import get_db
 from app.models import PrReport, User
 from app.routers.auth import get_current_user
+from app.config import settings
+from app.services.discussion import fetch_pr_discussion
 from app.services.github import GitHubClient
 
 router = APIRouter(prefix="/api", tags=["api"])
+
+
+@router.get("/ai/status")
+async def ai_status():
+    from app.analyzers.ai import ai_is_configured, get_last_ai_error, resolve_ai_config
+
+    config = resolve_ai_config()
+    return {
+        "configured": ai_is_configured(),
+        "provider": settings.resolved_ai_provider(),
+        "model": config[2] if config else None,
+        "lastError": get_last_ai_error(),
+    }
 
 
 @router.post("/demo/analyze")
@@ -84,7 +99,22 @@ async def analyze_pr(
     gh = GitHubClient(user.access_token)
     pr = await gh.get_pull(owner, repo, number)
     files = await gh.list_pr_files(owner, repo, number)
-    report = await analyze_pull_request(pr["title"], pr.get("body"), files)
+    activity = await fetch_pr_discussion(gh, owner, repo, number)
+    pr_meta = {
+        "author": pr["user"]["login"],
+        "state": pr["state"],
+        "additions": pr.get("additions", 0),
+        "deletions": pr.get("deletions", 0),
+        "changedFiles": pr.get("changed_files", len(files)),
+        "htmlUrl": pr.get("html_url"),
+    }
+    report = await analyze_pull_request(
+        pr["title"],
+        pr.get("body"),
+        files,
+        pr_meta=pr_meta,
+        review_activity=activity,
+    )
 
     result = await db.execute(
         select(PrReport).where(PrReport.owner == owner, PrReport.repo == repo, PrReport.pr_number == number)

@@ -72,6 +72,35 @@ class GitHubClient:
                 for item in data
             ]
 
+    async def list_pr_reviews(self, owner: str, repo: str, number: int) -> list[dict[str, Any]]:
+        async with httpx.AsyncClient(timeout=30) as client:
+            res = await client.get(
+                f"{self.base}/repos/{owner}/{repo}/pulls/{number}/reviews",
+                headers=self._headers(),
+            )
+            res.raise_for_status()
+            return res.json()
+
+    async def list_pr_review_comments(self, owner: str, repo: str, number: int) -> list[dict[str, Any]]:
+        async with httpx.AsyncClient(timeout=30) as client:
+            res = await client.get(
+                f"{self.base}/repos/{owner}/{repo}/pulls/{number}/comments",
+                headers=self._headers(),
+                params={"per_page": 100},
+            )
+            res.raise_for_status()
+            return res.json()
+
+    async def list_issue_comments(self, owner: str, repo: str, number: int) -> list[dict[str, Any]]:
+        async with httpx.AsyncClient(timeout=30) as client:
+            res = await client.get(
+                f"{self.base}/repos/{owner}/{repo}/issues/{number}/comments",
+                headers=self._headers(),
+                params={"per_page": 100},
+            )
+            res.raise_for_status()
+            return res.json()
+
 
 def github_oauth_url(state: str) -> str:
     scopes = "read:user repo"

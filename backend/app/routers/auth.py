@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import secrets
+
+import httpx
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
@@ -30,8 +32,13 @@ def set_session_cookie(response: Response, token: str) -> None:
         httponly=True,
         samesite="lax",
         secure=False,
+        path="/",
         max_age=60 * 60 * 24 * 7,
     )
+
+
+def auth_error_redirect(reason: str = "auth_failed") -> RedirectResponse:
+    return RedirectResponse(f"{settings.frontend_url}/?error={reason}")
 
 
 async def get_current_user(request: Request, db: Annotated[AsyncSession, Depends(get_db)]) -> User:
@@ -51,10 +58,19 @@ async def get_current_user(request: Request, db: Annotated[AsyncSession, Depends
 
 
 @router.get("/github")
-async def login_github(response: Response):
+async def login_github():
     state = secrets.token_urlsafe(16)
-    response.set_cookie("oauth_state", state, httponly=True, samesite="lax", max_age=600)
-    return RedirectResponse(github_oauth_url(state))
+    redirect = RedirectResponse(github_oauth_url(state))
+    redirect.set_cookie(
+        "oauth_state",
+        state,
+        httponly=True,
+        samesite="lax",
+        secure=False,
+        path="/",
+        max_age=600,
+    )
+    return redirect
 
 
 @router.get("/github/callback")
@@ -66,9 +82,12 @@ async def github_callback(
 ):
     saved_state = request.cookies.get("oauth_state")
     if not code or not state or not saved_state or state != saved_state:
-        raise HTTPException(status_code=400, detail="Invalid OAuth state")
+        return auth_error_redirect("invalid_oauth_state")
 
-    access_token = await exchange_code_for_token(code)
+    try:
+        access_token = await exchange_code_for_token(code)
+    except (ValueError, httpx.HTTPError):
+        return auth_error_redirect("token_exchange_failed")
     gh = GitHubClient(access_token)
     profile = await gh.get_user()
 

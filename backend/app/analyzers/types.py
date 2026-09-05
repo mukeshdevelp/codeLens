@@ -43,14 +43,44 @@ class FocusArea:
 
 
 @dataclass
+class FileChangeSummary:
+    filename: str
+    status: str
+    additions: int
+    deletions: int
+    summary: str
+    patch: str = ""
+    truncated: bool = False
+    summary_source: str = "rules"
+
+
+@dataclass
+class ReviewActivity:
+    type: str
+    author: str
+    body: str
+    created_at: str
+    state: str | None = None
+    file: str | None = None
+    line: int | None = None
+
+
+@dataclass
 class AnalysisReport:
-    pr: dict[str, str | None]
+    pr: dict[str, Any]
     risk_level: Severity
     risk_score: int
     executive_summary: str
     focus_areas: list[FocusArea]
     dimensions: list[DimensionResult]
     generated_at: str
+    pr_overview: str = ""
+    file_changes: list[FileChangeSummary] = field(default_factory=list)
+    discussion_summary: str = ""
+    review_activity: list[ReviewActivity] = field(default_factory=list)
+    ai_provider: str = ""
+    ai_summaries_used: int = 0
+    executive_summary_source: str = "rules"
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -58,6 +88,33 @@ class AnalysisReport:
             "riskLevel": self.risk_level,
             "riskScore": self.risk_score,
             "executiveSummary": self.executive_summary,
+            "prOverview": self.pr_overview,
+            "fileChanges": [
+                {
+                    "filename": f.filename,
+                    "status": f.status,
+                    "additions": f.additions,
+                    "deletions": f.deletions,
+                    "summary": f.summary,
+                    "summarySource": f.summary_source,
+                    "patch": f.patch,
+                    "truncated": f.truncated,
+                }
+                for f in self.file_changes
+            ],
+            "discussionSummary": self.discussion_summary,
+            "reviewActivity": [
+                {
+                    "type": a.type,
+                    "author": a.author,
+                    "body": a.body,
+                    "createdAt": a.created_at,
+                    "state": a.state,
+                    "file": a.file,
+                    "line": a.line,
+                }
+                for a in self.review_activity
+            ],
             "focusAreas": [
                 {
                     "rank": f.rank,
@@ -88,4 +145,7 @@ class AnalysisReport:
                 for d in self.dimensions
             ],
             "generatedAt": self.generated_at,
+            "aiProvider": self.ai_provider,
+            "aiSummariesUsed": self.ai_summaries_used,
+            "executiveSummarySource": self.executive_summary_source,
         }

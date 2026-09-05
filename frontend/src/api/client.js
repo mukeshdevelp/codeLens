@@ -23,6 +23,7 @@ export const api = {
     request(`/api/repos/${owner}/${repo}/pulls/${number}/analyze`, { method: "POST" }),
   report: (owner, repo, number) =>
     request(`/api/repos/${owner}/${repo}/pulls/${number}/report`),
+  aiStatus: () => request("/api/ai/status"),
 };
 
 export function loginUrl() {

@@ -1,15 +1,25 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { loginUrl } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 
+const AUTH_ERRORS = {
+  invalid_oauth_state: "GitHub sign-in was interrupted. Please try again.",
+  token_exchange_failed: "Could not complete GitHub sign-in. Check your OAuth app credentials.",
+  auth_failed: "Sign-in failed. Please try again.",
+};
+
 export default function Login() {
   const { user, loading } = useAuth();
+  const [searchParams] = useSearchParams();
+  const authError = AUTH_ERRORS[searchParams.get("error")] || null;
+
   if (loading) return <div className="page-center"><div className="spinner" /></div>;
   if (user) return <Navigate to="/dashboard" replace />;
 
   return (
     <div className="login-page">
       <div className="login-card">
+        {authError && <div className="error-banner">{authError}</div>}
         <div className="login-badge">PR Review Intelligence</div>
         <h1>CodeLens</h1>
         <p className="login-subtitle">

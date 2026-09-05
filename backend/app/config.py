@@ -10,7 +10,7 @@ class Settings(BaseSettings):
 
     github_client_id: str = ""
     github_client_secret: str = ""
-    github_redirect_uri: str = "http://localhost:8000/auth/github/callback"
+    github_redirect_uri: str = "http://localhost:5173/auth/github/callback"
     github_webhook_secret: str = ""
 
     session_secret: str = "change-me-in-production"
@@ -21,8 +21,27 @@ class Settings(BaseSettings):
 
     cursor_api_key: str = ""
     cursor_model: str = "composer-2.5"
+
+    # AI summaries — provider: openai | groq | perplexity | openrouter
+    ai_provider: str = "openai"
+    ai_api_key: str = ""
+    ai_base_url: str = ""
+    ai_model: str = ""
+    groq_api_key: str = ""
+    # Legacy OpenAI vars (still supported)
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
+
+    def resolved_ai_key(self) -> str:
+        provider = (self.ai_provider or "openai").lower()
+        if provider == "groq":
+            return self.ai_api_key or self.groq_api_key or self.openai_api_key
+        return self.ai_api_key or self.openai_api_key
+
+    def resolved_ai_provider(self) -> str:
+        if self.groq_api_key and not self.ai_api_key and self.ai_provider == "openai":
+            return "groq"
+        return (self.ai_provider or "openai").lower()
 
 
 settings = Settings()
