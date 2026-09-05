@@ -13,7 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.models import GitHubInstallation, PrCheckRun, PrReport
+from app.db.models import GitHubInstallation, PrCheckRun, PrReport
 from app.services.embed_tokens import embed_token
 from app.services.github import GitHubClient
 

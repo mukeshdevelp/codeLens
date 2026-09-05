@@ -8,8 +8,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.analyzers.service import analyze_pull_request
-from app.database import get_db
-from app.models import PrReport, User
+from app.db import get_db
+from app.db.models import PrReport, User
 from app.routers.auth import get_current_user
 from app.config import settings
 from app.services.analyze_pipeline import run_pr_analysis

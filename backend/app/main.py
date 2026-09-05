@@ -5,7 +5,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from app.config import settings
-from app.database import init_db
+from app.db import init_db
 from app.routers import api, auth, github_integration, webhooks
 
 app = FastAPI(title="CodeLens API", version="1.0.0")

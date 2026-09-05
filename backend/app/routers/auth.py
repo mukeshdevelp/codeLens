@@ -12,8 +12,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.database import get_db
-from app.models import User
+from app.db import get_db
+from app.db.models import User
 from app.services.github import GitHubClient, exchange_code_for_token, github_oauth_url
 
 router = APIRouter(prefix="/auth", tags=["auth"])

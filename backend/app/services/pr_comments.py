@@ -13,7 +13,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import PrReport, PrReviewPost
+from app.db.models import PrReport, PrReviewPost
 from app.services.github import GitHubClient
 
 

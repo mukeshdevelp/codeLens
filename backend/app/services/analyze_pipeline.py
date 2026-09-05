@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.analyzers.service import analyze_pull_request
 from app.config import settings
-from app.models import GitHubInstallation, PrReport
+from app.db.models import GitHubInstallation, PrReport
 from app.services.installations import find_installation_for_repo
 from app.services.checks import upsert_check_run
 from app.services.commits import enrich_pr_file_patches, fetch_pr_commits_detailed

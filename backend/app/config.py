@@ -1,4 +1,8 @@
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_DEFAULT_DB_FILE = Path(__file__).resolve().parent / "db" / "codelens.db"
 
 
 class Settings(BaseSettings):
@@ -30,7 +34,7 @@ class Settings(BaseSettings):
     frontend_url: str = "http://localhost:5173"
     backend_url: str = "http://localhost:8000"
 
-    database_url: str = "sqlite+aiosqlite:///./codelens.db"
+    database_url: str = f"sqlite+aiosqlite:///{_DEFAULT_DB_FILE}"
 
     cursor_api_key: str = ""
     cursor_model: str = "composer-2.5"

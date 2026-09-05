@@ -1,9 +1,17 @@
 from collections.abc import AsyncGenerator
+from pathlib import Path
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
 from app.config import settings
+
+DB_DIR = Path(__file__).resolve().parent
+
+
+def default_database_url() -> str:
+    return f"sqlite+aiosqlite:///{DB_DIR / 'codelens.db'}"
+
 
 engine = create_async_engine(settings.database_url, echo=False)
 SessionLocal = async_sessionmaker(engine, expire_on_commit=False)
@@ -19,8 +27,9 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def init_db() -> None:
-    from app import models  # noqa: F401
+    from app.db import models  # noqa: F401
 
+    DB_DIR.mkdir(parents=True, exist_ok=True)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
         await conn.run_sync(_migrate_sqlite_columns)

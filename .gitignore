@@ -3,6 +3,7 @@
 !.env.example
 backend/.venv/
 backend/codelens.db
+backend/app/db/codelens.db
 backend/**/__pycache__/
 frontend/node_modules/
 frontend/dist/

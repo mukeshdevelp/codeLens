@@ -18,8 +18,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.database import get_db
-from app.models import WebhookDelivery
+from app.db import get_db
+from app.db.models import WebhookDelivery
 from app.services.analyze_pipeline import run_pr_analysis
 from app.services.github import GitHubClient
 from app.services.github_app import get_installation_access_token

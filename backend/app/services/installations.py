@@ -12,7 +12,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import GitHubInstallation, RegisteredRepository
+from app.db.models import GitHubInstallation, RegisteredRepository
 
 
 async def upsert_installation(db: AsyncSession, payload: dict[str, Any]) -> GitHubInstallation:
