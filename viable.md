@@ -87,10 +87,10 @@ This document maps the **hackathon Product Requirements Document** to what CodeL
 | GitHub OAuth | ✅ | `routers/auth.py` |
 | List repos & open PRs | ✅ | `routers/api.py`, `services/github.py` |
 | Fetch PR files, commits, reviews | ✅ | Paginated files; per-commit patches |
-| GitHub App / Checks API | ❌ | Not built |
-| Webhooks (auto-analyze on push) | ❌ | `GITHUB_WEBHOOK_SECRET` in env only |
-| Post findings as PR review comments | ❌ | Not built |
-| Embedded in github.com UI | ❌ | External web app |
+| GitHub App / Checks API | ✅ | `services/checks.py`, `services/github_app.py` — see [PRODUCTION_GITHUB.md](./docs/PRODUCTION_GITHUB.md) |
+| Webhooks (auto-analyze on push) | ✅ | `routers/webhooks.py` → `POST /webhooks/github` |
+| Post findings as PR review comments | ✅ | `services/pr_comments.py`, `POST /api/github/.../post-summary` |
+| Embedded in github.com UI | ✅ | `EmbedReport.jsx`, signed `/embed/...` + Check `details_url` |
 
 ---
 
@@ -312,5 +312,6 @@ Sign in → pick repo → open PR → **Re-analyze** → review all five tabs.
 ## Related docs
 
 - Full PRD copy: [README.md — Product Requirements Document](./README.md#product-requirements-document)
+- **Production GitHub setup:** [docs/PRODUCTION_GITHUB.md](./docs/PRODUCTION_GITHUB.md)
 - Implementation tables: [README.md — Implementation status](./README.md#implementation-status)
 - Architecture: [docs/architecture.svg](./docs/architecture.svg)

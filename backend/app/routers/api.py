@@ -12,8 +12,7 @@ from app.database import get_db
 from app.models import PrReport, User
 from app.routers.auth import get_current_user
 from app.config import settings
-from app.services.commits import enrich_pr_file_patches, fetch_pr_commits_detailed
-from app.services.discussion import fetch_pr_discussion
+from app.services.analyze_pipeline import run_pr_analysis
 from app.services.github import GitHubClient
 
 router = APIRouter(prefix="/api", tags=["api"])
@@ -114,60 +113,22 @@ async def analyze_pr(
     number: int,
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
+    post_github_comment: bool = False,
+    sync_github_check: bool = False,
 ):
+    """Analyze PR via OAuth user token; optionally post GitHub comment or sync Check Run if App installed."""
     gh = GitHubClient(user.access_token)
-    pr = await gh.get_pull(owner, repo, number)
-    files = await gh.list_pr_files(owner, repo, number)
-    await enrich_pr_file_patches(
+    return await run_pr_analysis(
+        db,
         gh,
         owner,
         repo,
-        files,
-        pr.get("base", {}).get("sha"),
-        pr.get("head", {}).get("sha"),
+        number,
+        user_id=user.id,
+        source="oauth",
+        post_github_comment=post_github_comment,
+        sync_github_check=sync_github_check or settings.enable_github_checks,
     )
-    commits = await fetch_pr_commits_detailed(gh, owner, repo, number)
-    activity = await fetch_pr_discussion(gh, owner, repo, number)
-    pr_meta = {
-        "author": pr["user"]["login"],
-        "state": pr["state"],
-        "additions": pr.get("additions", 0),
-        "deletions": pr.get("deletions", 0),
-        "changedFiles": pr.get("changed_files", len(files)),
-        "commitCount": len(commits),
-        "htmlUrl": pr.get("html_url"),
-    }
-    report = await analyze_pull_request(
-        pr["title"],
-        pr.get("body"),
-        files,
-        pr_meta=pr_meta,
-        review_activity=activity,
-        commits=commits,
-    )
-
-    result = await db.execute(
-        select(PrReport).where(PrReport.owner == owner, PrReport.repo == repo, PrReport.pr_number == number)
-    )
-    existing = result.scalar_one_or_none()
-    report_json = json.dumps(report.to_dict())
-    if existing:
-        existing.title = pr["title"]
-        existing.report_json = report_json
-        existing.user_id = user.id
-    else:
-        db.add(
-            PrReport(
-                user_id=user.id,
-                owner=owner,
-                repo=repo,
-                pr_number=number,
-                title=pr["title"],
-                report_json=report_json,
-            )
-        )
-    await db.commit()
-    return report.to_dict()
 
 
 @router.get("/repos/{owner}/{repo}/pulls/{number}/report")

@@ -13,6 +13,19 @@ class Settings(BaseSettings):
     github_redirect_uri: str = "http://localhost:5173/auth/github/callback"
     github_webhook_secret: str = ""
 
+    # GitHub App (production: webhooks, Checks API, PR comments)
+    github_app_id: str = ""
+    github_app_private_key: str = ""
+    github_app_private_key_path: str = ""
+    github_app_slug: str = "codelens"
+    enable_github_checks: bool = True
+    enable_github_pr_comments: bool = False
+    auto_post_pr_comment_on_webhook: bool = False
+
+    # Signed embed URLs for github.com iframe / check details links
+    embed_shared_secret: str = ""
+    embed_allowed_frame_ancestors: str = "https://github.com"
+
     session_secret: str = "change-me-in-production"
     frontend_url: str = "http://localhost:5173"
     backend_url: str = "http://localhost:8000"
@@ -42,6 +55,14 @@ class Settings(BaseSettings):
         if self.groq_api_key and not self.ai_api_key and self.ai_provider == "openai":
             return "groq"
         return (self.ai_provider or "openai").lower()
+
+    def github_app_configured(self) -> bool:
+        """True when GitHub App credentials exist (webhooks + Checks + app-authenticated API)."""
+        return bool(self.github_app_id and (self.github_app_private_key or self.github_app_private_key_path))
+
+    def embed_configured(self) -> bool:
+        """True when signed embed tokens can be issued for github.com iframe/details links."""
+        return bool(self.embed_shared_secret)
 
 
 settings = Settings()

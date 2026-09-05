@@ -66,6 +66,8 @@ export default function PrReport() {
   const [error, setError] = useState("");
   const [tab, setTab] = useState("overview");
   const [aiStatus, setAiStatus] = useState(null);
+  const [ghStatus, setGhStatus] = useState(null);
+  const [posting, setPosting] = useState(false);
   const prNumber = Number(number);
 
   const isStaleReport = (data, status) => {
@@ -85,11 +87,11 @@ export default function PrReport() {
     return false;
   };
 
-  const runAnalyze = async () => {
+  const runAnalyze = async (opts = {}) => {
     setAnalyzing(true);
     setError("");
     try {
-      setReport(await api.analyze(owner, repo, prNumber));
+      setReport(await api.analyze(owner, repo, prNumber, opts));
       api.aiStatus().then(setAiStatus).catch(() => {});
     } catch (e) {
       setError(e.message);
@@ -99,8 +101,24 @@ export default function PrReport() {
     }
   };
 
+  const postToGithub = async () => {
+    setPosting(true);
+    setError("");
+    try {
+      const res = await api.postSummaryToGithub(owner, repo, prNumber, false);
+      if (res.skipped) {
+        setError("Summary already posted to GitHub. Use force from API to post again.");
+      }
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setPosting(false);
+    }
+  };
+
   useEffect(() => {
     api.aiStatus().then(setAiStatus).catch(() => {});
+    api.githubStatus().then(setGhStatus).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -143,11 +161,36 @@ export default function PrReport() {
           <p className="muted">{owner}/{repo}</p>
           <PrStats pr={report?.pr} />
         </div>
-        <button type="button" className="btn primary" onClick={runAnalyze} disabled={analyzing}>
-          {analyzing ? "Analyzing…" : "Re-analyze"}
-        </button>
+        <div className="report-header-actions">
+          {ghStatus?.prCommentsEnabled && (
+            <button type="button" className="btn ghost" onClick={postToGithub} disabled={posting || !report}>
+              {posting ? "Posting…" : "Post to GitHub"}
+            </button>
+          )}
+          {ghStatus?.checksEnabled && ghStatus?.appConfigured && (
+            <button
+              type="button"
+              className="btn ghost"
+              onClick={() => runAnalyze({ syncGithubCheck: true })}
+              disabled={analyzing}
+            >
+              Sync GitHub Check
+            </button>
+          )}
+          <button type="button" className="btn primary" onClick={() => runAnalyze()} disabled={analyzing}>
+            {analyzing ? "Analyzing…" : "Re-analyze"}
+          </button>
+        </div>
       </div>
 
+      {ghStatus?.appConfigured && (
+        <p className="muted github-integration-note">
+          GitHub App connected — webhooks auto-analyze PRs; Checks appear on github.com when enabled.
+          {ghStatus.installUrl && (
+            <> <a href={ghStatus.installUrl} target="_blank" rel="noreferrer">Install app</a></>
+          )}
+        </p>
+      )}
       {(loading || analyzing) && <div className="page-center"><div className="spinner" /></div>}
       {error && <div className="error-banner">{error}</div>}
       {aiStatus?.configured && report && report.aiSummariesUsed === 0 && !analyzing && (

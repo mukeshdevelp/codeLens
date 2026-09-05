@@ -134,6 +134,43 @@ class GitHubClient:
             raw = base64.b64decode(content)
             return raw.decode("utf-8", errors="replace")
 
+    async def create_check_run(self, owner: str, repo: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create a GitHub Check Run on a commit (requires GitHub App ``checks:write`` permission)."""
+        async with httpx.AsyncClient(timeout=60) as client:
+            res = await client.post(
+                f"{self.base}/repos/{owner}/{repo}/check-runs",
+                headers=self._headers(),
+                json=payload,
+            )
+            res.raise_for_status()
+            return res.json()
+
+    async def update_check_run(
+        self, owner: str, repo: str, check_run_id: int, payload: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Update an existing Check Run (e.g. mark completed after analysis finishes)."""
+        async with httpx.AsyncClient(timeout=60) as client:
+            res = await client.patch(
+                f"{self.base}/repos/{owner}/{repo}/check-runs/{check_run_id}",
+                headers=self._headers(),
+                json=payload,
+            )
+            res.raise_for_status()
+            return res.json()
+
+    async def create_issue_comment(
+        self, owner: str, repo: str, issue_number: int, body: str
+    ) -> dict[str, Any]:
+        """Post a comment on a PR (PRs are issues in GitHub's API). Used for CodeLens summaries."""
+        async with httpx.AsyncClient(timeout=60) as client:
+            res = await client.post(
+                f"{self.base}/repos/{owner}/{repo}/issues/{issue_number}/comments",
+                headers=self._headers(),
+                json={"body": body},
+            )
+            res.raise_for_status()
+            return res.json()
+
     async def list_pr_reviews(self, owner: str, repo: str, number: int) -> list[dict[str, Any]]:
         async with httpx.AsyncClient(timeout=30) as client:
             res = await client.get(
