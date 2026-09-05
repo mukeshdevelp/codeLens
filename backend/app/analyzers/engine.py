@@ -31,6 +31,7 @@ UNSAFE_PATTERNS = [
 ]
 
 SOURCE_EXT = re.compile(r"\.(ts|tsx|js|jsx|py|go|rs|java)$", re.I)
+DOC_EXT = re.compile(r"\.(md|markdown|txt|rst|adoc)$", re.I)
 TEST_PATTERNS = [re.compile(p, re.I) for p in [r"/tests?/", r"\.test\.", r"\.spec\.", r"_test\.", r"test_"]]
 
 WEIGHTS = {
@@ -109,6 +110,9 @@ def detect_critical_paths(files: list[FileChange]) -> DimensionResult:
     labels: set[str] = set()
 
     for f in files:
+        # Skip documentation — words like "token" or "auth" in install guides are not security signals
+        if DOC_EXT.search(f.filename):
+            continue
         content = f"{f.filename}\n{f.patch or ''}"
         for area_id, label, severity, patterns in CRITICAL_PATTERNS:
             if any(re.search(p, content, re.I) for p in patterns):

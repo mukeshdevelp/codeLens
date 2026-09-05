@@ -314,19 +314,40 @@ code { background: #243044; padding: 0.1rem 0.35rem; border-radius: 4px; font-si
 .commit-timeline-header {
   display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; margin-bottom: 0.65rem;
 }
-.commit-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.55rem; }
-.commit-card {
-  padding: 0.75rem 0.9rem; border-radius: 10px;
-  border: 1px solid var(--border); border-left: 4px solid var(--accent);
-  background: rgba(91, 140, 255, 0.05);
+.commit-walkthrough-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.65rem; }
+.commit-walkthrough-card {
+  border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+  background: var(--surface-2);
 }
-.commit-card-top { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem; }
-.commit-index { font-size: 0.75rem; font-weight: 700; color: var(--accent); }
+.commit-walkthrough-card.open { border-color: rgba(124, 92, 255, 0.4); }
+.commit-walkthrough-header {
+  width: 100%; display: flex; align-items: flex-start; gap: 0.65rem;
+  padding: 0.85rem 1rem; background: transparent; color: var(--text); text-align: left;
+  border: none; cursor: pointer;
+}
+.commit-walkthrough-header:hover { background: rgba(255,255,255,0.03); }
+.commit-walkthrough-meta { flex: 1; min-width: 0; }
+.commit-walkthrough-title-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem; }
+.commit-walkthrough-stats { display: flex; flex-direction: column; align-items: flex-end; gap: 0.2rem; font-family: ui-monospace, monospace; font-size: 0.8rem; }
+.commit-file-count { font-size: 0.75rem; }
+.commit-walkthrough-body { border-top: 1px solid var(--border); padding: 0.85rem 1rem 1rem; }
+.commit-message-full { margin: 0 0 0.75rem; white-space: pre-wrap; font-size: 0.85rem; font-family: inherit; }
+.commit-files-list { display: grid; gap: 0.5rem; }
+.commit-file-card { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: rgba(11,16,32,0.35); }
+.commit-file-header {
+  width: 100%; display: flex; align-items: center; gap: 0.55rem;
+  padding: 0.6rem 0.75rem; background: transparent; color: var(--text); text-align: left; border: none; cursor: pointer;
+}
+.commit-file-header:hover { background: rgba(255,255,255,0.03); }
+.commit-file-name { flex: 1; font-family: ui-monospace, monospace; font-size: 0.82rem; word-break: break-all; }
+.commit-file-body { border-top: 1px solid var(--border); padding: 0.65rem 0.75rem 0.75rem; }
+.commit-diff-label { font-size: 0.8rem; margin: 0 0 0.5rem; }
+.commit-toolbar-actions { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.commit-index { font-size: 0.75rem; font-weight: 700; color: var(--accent-2); flex-shrink: 0; margin-top: 0.15rem; }
 .commit-sha { font-family: ui-monospace, monospace; font-size: 0.8rem; color: var(--accent); }
 .commit-author { font-size: 0.85rem; color: var(--muted); }
-.commit-date { font-size: 0.8rem; margin-left: auto; }
+.commit-date { font-size: 0.8rem; }
 .commit-message { margin: 0; line-height: 1.5; font-size: 0.9rem; }
-.commit-stats { display: flex; gap: 0.4rem; margin-top: 0.35rem; font-family: ui-monospace, monospace; font-size: 0.8rem; }
 
 /* Diff viewer */
 .diff-viewer { border: 1px solid var(--border); border-radius: 8px; overflow: auto; max-height: 70vh; background: #0d1117; }

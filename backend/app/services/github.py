@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 from typing import Any
 
 import httpx
@@ -95,6 +96,43 @@ class GitHubClient:
             f"{self.base}/repos/{owner}/{repo}/pulls/{number}/commits",
             params={"per_page": 100},
         )
+
+    async def get_commit(self, owner: str, repo: str, sha: str) -> dict[str, Any]:
+        async with httpx.AsyncClient(timeout=60) as client:
+            res = await client.get(
+                f"{self.base}/repos/{owner}/{repo}/commits/{sha}",
+                headers=self._headers(),
+            )
+            res.raise_for_status()
+            return res.json()
+
+    async def compare_commits(self, owner: str, repo: str, base: str, head: str) -> dict[str, Any]:
+        async with httpx.AsyncClient(timeout=60) as client:
+            res = await client.get(
+                f"{self.base}/repos/{owner}/{repo}/compare/{base}...{head}",
+                headers=self._headers(),
+            )
+            res.raise_for_status()
+            return res.json()
+
+    async def get_file_text(self, owner: str, repo: str, path: str, ref: str) -> str | None:
+        async with httpx.AsyncClient(timeout=60) as client:
+            res = await client.get(
+                f"{self.base}/repos/{owner}/{repo}/contents/{path}",
+                headers=self._headers(),
+                params={"ref": ref},
+            )
+            if res.status_code == 404:
+                return None
+            res.raise_for_status()
+            data = res.json()
+            if isinstance(data, list):
+                return None
+            content = data.get("content")
+            if not content:
+                return None
+            raw = base64.b64decode(content)
+            return raw.decode("utf-8", errors="replace")
 
     async def list_pr_reviews(self, owner: str, repo: str, number: int) -> list[dict[str, Any]]:
         async with httpx.AsyncClient(timeout=30) as client:

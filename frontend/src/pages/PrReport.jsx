@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import AiSourceBadge, { PanelHeading } from "../components/AiSourceBadge";
+import CommitWalkthrough from "../components/CommitWalkthrough";
 import FileWalkthrough from "../components/FileWalkthrough";
 import Layout from "../components/Layout";
 import ReviewDiscussion from "../components/ReviewDiscussion";
@@ -9,6 +10,7 @@ import ReviewDiscussion from "../components/ReviewDiscussion";
 const TABS = [
   { id: "overview", label: "Overview" },
   { id: "changes", label: "Changes" },
+  { id: "commits", label: "Commits" },
   { id: "discussion", label: "Discussion" },
   { id: "analysis", label: "Risk analysis" },
 ];
@@ -71,6 +73,7 @@ export default function PrReport() {
     if (!data.fileChanges?.length && (data.pr?.changedFiles ?? 0) > 0) return true;
     if (!("aiProvider" in data)) return true;
     if (!("commits" in data)) return true;
+    if (data.commits?.length > 0 && !("files" in data.commits[0])) return true;
     if (!("discussionSummarySource" in data)) return true;
     if (!("prOverviewSource" in data)) return true;
     if (data.fileChanges?.some((f) => !("summarySource" in f))) return true;
@@ -172,6 +175,9 @@ export default function PrReport() {
                 {t.id === "changes" && report.fileChanges?.length > 0 && (
                   <span className="tab-count">{report.fileChanges.length}</span>
                 )}
+                {t.id === "commits" && report.commits?.length > 0 && (
+                  <span className="tab-count">{report.commits.length}</span>
+                )}
                 {t.id === "discussion" && report.reviewActivity?.length > 0 && (
                   <span className="tab-count">{report.reviewActivity.length}</span>
                 )}
@@ -208,6 +214,9 @@ export default function PrReport() {
                   <h3>Where to focus first</h3>
                   <AiSourceBadge source="rules" />
                 </div>
+                <p className="muted panel-intro">
+                  Rule-based risk signals from analyzers — not AI. Docs (.md) are excluded from auth/security keyword scans.
+                </p>
                 <ol className="focus-list">
                   {report.focusAreas.map((area) => (
                     <li key={area.rank} className={`focus-card focus-${area.severity}`}>
@@ -243,6 +252,18 @@ export default function PrReport() {
               <FileWalkthrough
                 files={report.fileChanges || []}
                 aiProvider={report.aiProvider}
+                prHtmlUrl={report.pr?.htmlUrl}
+              />
+            </section>
+          )}
+
+          {tab === "commits" && (
+            <section className="panel">
+              <h3>Commit history</h3>
+              <p className="muted panel-intro">
+                All commits on this branch with per-file diffs — green for additions, red for deletions.
+              </p>
+              <CommitWalkthrough
                 commits={report.commits || []}
                 prHtmlUrl={report.pr?.htmlUrl}
               />

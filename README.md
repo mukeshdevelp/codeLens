@@ -9,6 +9,7 @@ CodeLens is a GitHub-based tool that analyzes pull requests and gives reviewers 
 ## Table of contents
 
 - [Product Requirements Document](#product-requirements-document)
+- [PRD viability tracker (viable.md)](./viable.md)
 - [Implementation status](#implementation-status)
 - [Problem](#problem)
 - [Architecture](#architecture)
@@ -196,6 +197,8 @@ Legend: ✅ Implemented · ⚠️ Partial · ❌ Not implemented
 | PR report — Changes tab (diffs) | ✅ | `pages/PrReport.jsx`, `FileWalkthrough.jsx`, `DiffViewer.jsx` |
 | PR report — Discussion tab | ✅ | `pages/PrReport.jsx`, `ReviewDiscussion.jsx` |
 | PR report — Risk analysis tab | ✅ | `pages/PrReport.jsx` |
+| PR report — Commits tab (per-commit diffs) | ✅ | `CommitWalkthrough.jsx` |
+| AI source badges (Groq vs Auto) | ✅ | `AiSourceBadge.jsx` |
 | Layout + user menu | ✅ | `components/Layout.jsx` |
 
 ### Summary
@@ -204,7 +207,7 @@ Legend: ✅ Implemented · ⚠️ Partial · ❌ Not implemented
 |------|----------|
 | Core PR analysis dimensions (PRD §4) | **6 / 7** (code quality not yet implemented) |
 | GitHub workflow prototype (PRD §5–6) | **~85%** (web app, not GitHub-native) |
-| CodeRabbit-inspired UX (PRD §11) | **~80%** (walkthrough, diffs, discussion; AI needs provider key) |
+| CodeRabbit-inspired UX (PRD §11) | **~85%** (walkthrough, commits, diffs, discussion; AI needs provider key) |
 | Non-goals respected (PRD §7) | **100%** |
 
 ---

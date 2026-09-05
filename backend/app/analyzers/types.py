@@ -57,6 +57,17 @@ class FileChangeSummary:
 
 
 @dataclass
+class CommitFileChange:
+    filename: str
+    status: str
+    additions: int
+    deletions: int
+    patch: str = ""
+    previous_filename: str = ""
+    patch_unavailable: bool = False
+
+
+@dataclass
 class PrCommit:
     sha: str
     message: str
@@ -65,6 +76,7 @@ class PrCommit:
     html_url: str
     additions: int = 0
     deletions: int = 0
+    files: list[CommitFileChange] = field(default_factory=list)
 
 
 @dataclass
@@ -142,6 +154,18 @@ class AnalysisReport:
                     "htmlUrl": c.html_url,
                     "additions": c.additions,
                     "deletions": c.deletions,
+                    "files": [
+                        {
+                            "filename": f.filename,
+                            "status": f.status,
+                            "additions": f.additions,
+                            "deletions": f.deletions,
+                            "patch": f.patch,
+                            "previousFilename": f.previous_filename,
+                            "patchUnavailable": f.patch_unavailable,
+                        }
+                        for f in c.files
+                    ],
                 }
                 for c in self.commits
             ],

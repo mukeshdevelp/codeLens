@@ -12,6 +12,7 @@ from app.database import get_db
 from app.models import PrReport, User
 from app.routers.auth import get_current_user
 from app.config import settings
+from app.services.commits import enrich_pr_file_patches, fetch_pr_commits_detailed
 from app.services.discussion import fetch_pr_discussion
 from app.services.github import GitHubClient
 
@@ -117,22 +118,16 @@ async def analyze_pr(
     gh = GitHubClient(user.access_token)
     pr = await gh.get_pull(owner, repo, number)
     files = await gh.list_pr_files(owner, repo, number)
-    raw_commits = await gh.list_pr_commits(owner, repo, number)
+    await enrich_pr_file_patches(
+        gh,
+        owner,
+        repo,
+        files,
+        pr.get("base", {}).get("sha"),
+        pr.get("head", {}).get("sha"),
+    )
+    commits = await fetch_pr_commits_detailed(gh, owner, repo, number)
     activity = await fetch_pr_discussion(gh, owner, repo, number)
-    commits = [
-        {
-            "sha": c["sha"],
-            "message": (c.get("commit", {}).get("message") or "").strip(),
-            "author": (c.get("author") or {}).get("login")
-            or (c.get("commit", {}).get("author") or {}).get("name")
-            or "unknown",
-            "date": (c.get("commit", {}).get("author") or {}).get("date", ""),
-            "htmlUrl": c.get("html_url", ""),
-            "additions": sum(f.get("additions", 0) for f in c.get("files", [])),
-            "deletions": sum(f.get("deletions", 0) for f in c.get("files", [])),
-        }
-        for c in raw_commits
-    ]
     pr_meta = {
         "author": pr["user"]["login"],
         "state": pr["state"],

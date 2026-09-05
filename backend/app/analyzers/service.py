@@ -22,7 +22,15 @@ from app.analyzers.summarize import (
     summarize_file_changes,
     summarize_pr_overview,
 )
-from app.analyzers.types import AnalysisReport, FileChange, FileChangeSummary, FocusArea, PrCommit, ReviewActivity
+from app.analyzers.types import (
+    AnalysisReport,
+    CommitFileChange,
+    FileChange,
+    FileChangeSummary,
+    FocusArea,
+    PrCommit,
+    ReviewActivity,
+)
 from app.config import settings
 
 
@@ -135,6 +143,18 @@ async def analyze_pull_request(
             html_url=c.get("htmlUrl", ""),
             additions=c.get("additions", 0),
             deletions=c.get("deletions", 0),
+            files=[
+                CommitFileChange(
+                    filename=f.get("filename", ""),
+                    status=f.get("status", "modified"),
+                    additions=f.get("additions", 0),
+                    deletions=f.get("deletions", 0),
+                    patch=f.get("patch", ""),
+                    previous_filename=f.get("previousFilename", ""),
+                    patch_unavailable=bool(f.get("patchUnavailable")),
+                )
+                for f in c.get("files", [])
+            ],
         )
         for c in (commits or [])
     ]

@@ -15,16 +15,20 @@ function DiffLine({ line }) {
 
 const PREVIEW_LINES = 200;
 
-export default function DiffViewer({ patch, githubUrl }) {
-  const [expanded, setExpanded] = useState(true);
+export default function DiffViewer({ patch, githubUrl, defaultExpanded = false, unavailable = false }) {
+  const [expanded, setExpanded] = useState(defaultExpanded);
 
   if (!patch) {
     return (
       <div className="diff-empty-wrap">
-        <p className="muted diff-empty">Diff too large to display (GitHub omits patches over 1 MB).</p>
+        <p className="muted diff-empty">
+          {unavailable
+            ? "Could not load this diff automatically. The file may be too large — open it on GitHub."
+            : "No diff available for this file in this commit."}
+        </p>
         {githubUrl && (
           <a href={githubUrl} target="_blank" rel="noreferrer" className="btn ghost btn-sm">
-            View full diff on GitHub
+            View on GitHub
           </a>
         )}
       </div>
