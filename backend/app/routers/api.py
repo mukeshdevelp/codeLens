@@ -31,6 +31,24 @@ async def ai_status():
     }
 
 
+@router.get("/ai/test")
+async def ai_test():
+    """Call the configured AI provider with a short prompt (verifies key + model)."""
+    from app.analyzers.ai import ai_complete, get_last_ai_error, resolve_ai_config
+
+    config = resolve_ai_config()
+    if not config:
+        return {"ok": False, "error": "No AI API key configured"}
+    sample = await ai_complete("Reply with exactly: CodeLens AI is working.", max_tokens=100)
+    return {
+        "ok": bool(sample),
+        "provider": settings.resolved_ai_provider(),
+        "model": config[2],
+        "sample": sample,
+        "lastError": get_last_ai_error(),
+    }
+
+
 @router.post("/demo/analyze")
 async def demo_analyze():
     """Analyze fixture PR without GitHub auth — for hackathon demo."""

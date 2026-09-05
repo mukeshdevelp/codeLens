@@ -95,7 +95,7 @@ async def _ai_file_summary(f: FileChange) -> str | None:
         prompt += f"Diff preview:\n{preview[:2500]}"
     else:
         prompt += "No diff available — summarize based on filename and stats only."
-    return await ai_complete(prompt, system="You write concise file change summaries like CodeRabbit.", max_tokens=150)
+    return await ai_complete(prompt, system="You write concise file change summaries like CodeRabbit.", max_tokens=300)
 
 
 async def summarize_pr_overview(title: str, body: str | None, files: list[FileChange]) -> tuple[str, bool]:

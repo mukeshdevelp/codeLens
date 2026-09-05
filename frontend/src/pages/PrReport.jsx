@@ -58,6 +58,7 @@ export default function PrReport() {
     setError("");
     try {
       setReport(await api.analyze(owner, repo, prNumber));
+      api.aiStatus().then(setAiStatus).catch(() => {});
     } catch (e) {
       setError(e.message);
     } finally {
@@ -113,11 +114,12 @@ export default function PrReport() {
 
       {(loading || analyzing) && <div className="page-center"><div className="spinner" /></div>}
       {error && <div className="error-banner">{error}</div>}
-      {aiStatus?.configured && report?.aiSummariesUsed === 0 && !analyzing && (
+      {aiStatus?.configured && report && report.aiSummariesUsed === 0 && !analyzing && (
         <div className="error-banner">
           AI provider ({aiStatus.provider}) is configured but summaries fell back to rules.
           {aiStatus.lastError && <> Error: {aiStatus.lastError}</>}
-          {" "}Try Re-analyze or check your API key/billing.
+          {" "}Click <strong>Re-analyze</strong> after restarting the backend. If it persists, run{" "}
+          <code>curl http://localhost:8000/api/ai/test</code>.
         </div>
       )}
 

@@ -418,7 +418,7 @@ The Vite dev server proxies `/auth` and `/api` to the backend.
 | `OPENAI_MODEL` | No | Default: `gpt-4o-mini` |
 | `GROQ_API_KEY` | No | Groq key (auto-used when `AI_PROVIDER=groq`) |
 
-**Groq (free):** set `AI_PROVIDER=groq` and `GROQ_API_KEY=gsk_...` (or `AI_API_KEY=gsk_...`).
+**Groq (free):** set `AI_PROVIDER=groq` and `GROQ_API_KEY=gsk_...`. Default model: `openai/gpt-oss-20b`.
 
 **Perplexity:** set `AI_PROVIDER=perplexity`, `AI_API_KEY=pplx-...`, `AI_MODEL=sonar`.
 

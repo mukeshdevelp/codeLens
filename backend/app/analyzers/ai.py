@@ -18,7 +18,7 @@ PROVIDER_PRESETS: dict[str, dict[str, str]] = {
     },
     "groq": {
         "base_url": "https://api.groq.com/openai/v1",
-        "model": "llama-3.3-70b-versatile",
+        "model": "openai/gpt-oss-20b",
     },
     "perplexity": {
         "base_url": "https://api.perplexity.ai",
@@ -50,8 +50,22 @@ def resolve_ai_config() -> tuple[str, str, str] | None:
     provider = settings.resolved_ai_provider()
     preset = PROVIDER_PRESETS.get(provider, PROVIDER_PRESETS["openai"])
     base_url = (settings.ai_base_url or preset["base_url"]).rstrip("/")
-    model = settings.ai_model or settings.openai_model or preset["model"]
+    if settings.ai_model:
+        model = settings.ai_model
+    elif provider == "openai":
+        model = settings.openai_model or preset["model"]
+    else:
+        model = preset["model"]
     return api_key, base_url, model
+
+
+def _extract_message_text(message: dict) -> str:
+    """Extract assistant text; Groq reasoning models may use `reasoning` when `content` is empty."""
+    content = (message.get("content") or "").strip()
+    if content:
+        return content
+    reasoning = (message.get("reasoning") or "").strip()
+    return reasoning
 
 
 async def ai_complete(
@@ -70,6 +84,10 @@ async def ai_complete(
 
     api_key, base_url, model = config
     url = f"{base_url}/chat/completions"
+    # Groq gpt-oss models spend tokens on internal reasoning before filling `content`
+    token_budget = max_tokens
+    if "gpt-oss" in model:
+        token_budget = max(max_tokens, 1024)
 
     try:
         async with httpx.AsyncClient(timeout=60) as client:
@@ -82,7 +100,7 @@ async def ai_complete(
                 json={
                     "model": model,
                     "temperature": 0.2,
-                    "max_tokens": max_tokens,
+                    "max_tokens": token_budget,
                     "messages": [
                         {"role": "system", "content": system},
                         {"role": "user", "content": prompt},
@@ -90,11 +108,11 @@ async def ai_complete(
                 },
             )
             if res.status_code >= 400:
-                _last_ai_error = f"AI API error ({settings.ai_provider or 'openai'}): {res.status_code} {res.text[:300]}"
+                _last_ai_error = f"AI API error ({settings.resolved_ai_provider()}): {res.status_code} {res.text[:300]}"
                 logger.warning(_last_ai_error)
                 return None
             data = res.json()
-            text = data["choices"][0]["message"]["content"].strip()
+            text = _extract_message_text(data["choices"][0]["message"])
             if text:
                 _last_ai_error = None
                 return text

@@ -8,5 +8,5 @@ frontend/node_modules/
 frontend/dist/
 *.log
 .DS_Store
-
+keys-command/
 .env.example
