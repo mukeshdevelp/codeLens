@@ -1,0 +1,46 @@
+{
+  "title": "Fix login redirect bug",
+  "body": "Fixes the redirect after login for OAuth users. Also updates user profile caching.",
+  "files": [
+    {
+      "filename": "src/auth/login.ts",
+      "status": "modified",
+      "additions": 45,
+      "deletions": 12,
+      "patch": "@@ -10,6 +10,15 @@\n export async function login(credentials) {\n+  const token = process.env.JWT_SECRET || 'hardcoded-dev-secret-key-12345';\n   const user = await validateUser(credentials);\n+  if (!user) return redirect('/error');\n   return createSession(user);\n }"
+    },
+    {
+      "filename": "src/auth/session.ts",
+      "status": "modified",
+      "additions": 28,
+      "deletions": 5,
+      "patch": "@@ -1,5 +1,10 @@\n export function createSession(user) {\n+  const payload = { id: user.id, role: user.role };\n   return signJwt(payload);\n }"
+    },
+    {
+      "filename": "src/payments/billing.ts",
+      "status": "modified",
+      "additions": 67,
+      "deletions": 3,
+      "patch": "@@ -20,3 +20,10 @@\n export async function updateSubscription(userId, plan) {\n+  const query = `UPDATE subscriptions SET plan='${plan}' WHERE user_id=${userId}`;\n+  return db.execute(query);\n }"
+    },
+    {
+      "filename": "src/api/routes/users.ts",
+      "status": "modified",
+      "additions": 35,
+      "deletions": 8,
+      "patch": "@@ -5,6 +5,12 @@\n router.get('/profile', async (req, res) => {\n+  const html = `<div>${req.query.name}</div>`;\n+  res.send(html);\n });"
+    },
+    {
+      "filename": "src/config/cache.ts",
+      "status": "added",
+      "additions": 52,
+      "deletions": 0
+    },
+    {
+      "filename": "src/utils/helpers.ts",
+      "status": "modified",
+      "additions": 18,
+      "deletions": 2
+    }
+  ]
+}

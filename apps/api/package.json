@@ -1,0 +1,23 @@
+{
+  "name": "@codelens/api",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@codelens/analyzers": "*",
+    "@codelens/reporter": "*",
+    "@octokit/auth-app": "^7.1.4",
+    "@octokit/rest": "^21.1.1",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.13.4",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3"
+  }
+}

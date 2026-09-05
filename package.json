@@ -1,0 +1,23 @@
+{
+  "name": "codelens",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "CodeLens — understand a PR before reviewing it (MCP + AI)",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "dev:api": "npm run dev -w @codelens/api",
+    "dev:mcp": "npm run dev -w @codelens/mcp-server",
+    "dev:web": "npm run dev -w @codelens/web",
+    "start:api": "npm run start -w @codelens/api",
+    "analyze:local": "npm run analyze -w @codelens/cli",
+    "demo:analyze": "node scripts/demo-analyze.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
