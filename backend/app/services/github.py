@@ -52,25 +52,49 @@ class GitHubClient:
             res.raise_for_status()
             return res.json()
 
-    async def list_pr_files(self, owner: str, repo: str, number: int) -> list[FileChange]:
-        async with httpx.AsyncClient(timeout=30) as client:
-            res = await client.get(
-                f"{self.base}/repos/{owner}/{repo}/pulls/{number}/files",
-                headers=self._headers(),
-                params={"per_page": 100},
-            )
-            res.raise_for_status()
-            data = res.json()
-            return [
-                FileChange(
-                    filename=item["filename"],
-                    status=item["status"],
-                    additions=item.get("additions", 0),
-                    deletions=item.get("deletions", 0),
-                    patch=item.get("patch"),
+    async def _paginate(self, url: str, params: dict | None = None) -> list[dict[str, Any]]:
+        items: list[dict[str, Any]] = []
+        page_url: str | None = url
+        first = True
+        async with httpx.AsyncClient(timeout=60) as client:
+            while page_url:
+                res = await client.get(
+                    page_url,
+                    headers=self._headers(),
+                    params=params if first else None,
                 )
-                for item in data
-            ]
+                res.raise_for_status()
+                items.extend(res.json())
+                first = False
+                page_url = None
+                link = res.headers.get("Link", "")
+                for part in link.split(","):
+                    if 'rel="next"' in part:
+                        page_url = part.split(";")[0].strip().strip("<>")
+                        break
+        return items
+
+    async def list_pr_files(self, owner: str, repo: str, number: int) -> list[FileChange]:
+        data = await self._paginate(
+            f"{self.base}/repos/{owner}/{repo}/pulls/{number}/files",
+            params={"per_page": 100},
+        )
+        return [
+            FileChange(
+                filename=item["filename"],
+                status=item["status"],
+                additions=item.get("additions", 0),
+                deletions=item.get("deletions", 0),
+                patch=item.get("patch"),
+            )
+            for item in data
+        ]
+
+    async def list_pr_commits(self, owner: str, repo: str, number: int) -> list[dict[str, Any]]:
+        return await self._paginate(
+            f"{self.base}/repos/{owner}/{repo}/pulls/{number}/commits",
+            params={"per_page": 100},
+        )
 
     async def list_pr_reviews(self, owner: str, repo: str, number: int) -> list[dict[str, Any]]:
         async with httpx.AsyncClient(timeout=30) as client:

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api/client";
+import AiSourceBadge, { PanelHeading } from "../components/AiSourceBadge";
 import FileWalkthrough from "../components/FileWalkthrough";
 import Layout from "../components/Layout";
 import ReviewDiscussion from "../components/ReviewDiscussion";
@@ -21,12 +22,31 @@ function RiskBadge({ level, score }) {
   );
 }
 
+function AiFooterBreakdown({ report }) {
+  if (!report?.aiProvider) return null;
+  const b = report.aiSummaryBreakdown || {};
+  const parts = [];
+  if (b.executiveSummary === "ai") parts.push("executive");
+  if (b.prOverview === "ai") parts.push("PR overview");
+  if (b.discussionSummary === "ai") parts.push("discussion");
+  if (b.fileChanges > 0) parts.push(`${b.fileChanges} file${b.fileChanges !== 1 ? "s" : ""}`);
+  return (
+    <>
+      {" "}· AI ({report.aiProvider}): {parts.length ? parts.join(", ") : "none"}
+      {" "}({report.aiSummariesUsed} total)
+    </>
+  );
+}
+
 function PrStats({ pr }) {
   if (!pr) return null;
   return (
     <div className="pr-stats">
       {pr.author && <span>by @{pr.author}</span>}
       {pr.changedFiles != null && <span>{pr.changedFiles} files</span>}
+      {pr.commitCount != null && pr.commitCount > 0 && (
+        <span>{pr.commitCount} commit{pr.commitCount !== 1 ? "s" : ""}</span>
+      )}
       {pr.additions != null && <span className="diff-stat-add">+{pr.additions}</span>}
       {pr.deletions != null && <span className="diff-stat-del">-{pr.deletions}</span>}
       {pr.htmlUrl && (
@@ -50,12 +70,13 @@ export default function PrReport() {
     if (!data) return true;
     if (!data.fileChanges?.length && (data.pr?.changedFiles ?? 0) > 0) return true;
     if (!("aiProvider" in data)) return true;
+    if (!("commits" in data)) return true;
+    if (!("discussionSummarySource" in data)) return true;
+    if (!("prOverviewSource" in data)) return true;
     if (data.fileChanges?.some((f) => !("summarySource" in f))) return true;
-    // Groq configured but cache has no AI file summaries — run analyze once and save to DB
     if (status?.configured) {
       const hasAiFileSummary = data.fileChanges?.some((f) => f.summarySource === "ai");
       if (!hasAiFileSummary || !data.aiSummariesUsed) return true;
-      // Old Groq cache before per-file timestamp — re-run once and save fresh summaries
       if (data.fileChanges?.some((f) => f.summarySource === "ai" && !f.summarizedAt)) return true;
     }
     return false;
@@ -159,45 +180,82 @@ export default function PrReport() {
           </nav>
 
           {tab === "overview" && (
-            <>
-              <section className="panel">
-                <h3>PR summary</h3>
-                <p className="pr-overview">{report.prOverview || report.executiveSummary}</p>
+            <div className="overview-section">
+              <section className="panel overview-panel">
+                <PanelHeading
+                  title="PR summary"
+                  source={report.prOverviewSource}
+                  provider={report.aiProvider}
+                />
+                <div className="overview-highlight">
+                  <p className="pr-overview">{report.prOverview || report.executiveSummary}</p>
+                </div>
               </section>
 
-              <section className="panel">
-                <h3>Executive summary</h3>
-                <p>{report.executiveSummary}</p>
+              <section className="panel overview-panel">
+                <PanelHeading
+                  title="Executive summary"
+                  source={report.executiveSummarySource}
+                  provider={report.aiProvider}
+                />
+                <div className="overview-highlight overview-highlight-exec">
+                  <p className="overview-exec-text">{report.executiveSummary}</p>
+                </div>
               </section>
 
-              <section className="panel">
-                <h3>Where to focus first</h3>
+              <section className="panel overview-panel">
+                <div className="panel-heading">
+                  <h3>Where to focus first</h3>
+                  <AiSourceBadge source="rules" />
+                </div>
                 <ol className="focus-list">
                   {report.focusAreas.map((area) => (
-                    <li key={area.rank} className={`focus-${area.severity}`}>
-                      <strong>#{area.rank} {area.area}</strong>
-                      <span>{area.reason}</span>
-                      {area.files.length > 0 && <code>{area.files.join(", ")}</code>}
+                    <li key={area.rank} className={`focus-card focus-${area.severity}`}>
+                      <div className="focus-card-header">
+                        <span className={`badge badge-${area.severity}`}>{area.severity}</span>
+                        <strong className="focus-card-title">#{area.rank} {area.area}</strong>
+                      </div>
+                      <p className="focus-card-reason">{area.reason}</p>
+                      {area.files.length > 0 && (
+                        <div className="focus-card-files">
+                          <span className="focus-file-label">Files</span>
+                          <code>{area.files.join(", ")}</code>
+                        </div>
+                      )}
                     </li>
                   ))}
                 </ol>
               </section>
-            </>
+            </div>
           )}
 
           {tab === "changes" && (
             <section className="panel">
-              <h3>Walkthrough</h3>
+              <div className="panel-heading">
+                <h3>Walkthrough</h3>
+                {report.fileChanges?.some((f) => f.summarySource === "ai") && (
+                  <AiSourceBadge source="ai" provider={report.aiProvider} />
+                )}
+              </div>
               <p className="muted panel-intro">
                 File-by-file summary with diffs — like CodeRabbit. Expand any file to see what changed.
               </p>
-              <FileWalkthrough files={report.fileChanges || []} aiProvider={report.aiProvider} />
+              <FileWalkthrough
+                files={report.fileChanges || []}
+                aiProvider={report.aiProvider}
+                commits={report.commits || []}
+                prHtmlUrl={report.pr?.htmlUrl}
+              />
             </section>
           )}
 
           {tab === "discussion" && (
             <section className="panel">
-              <h3>Review discussion</h3>
+              <PanelHeading
+                title="Review discussion"
+                source={report.discussionSummarySource}
+                provider={report.aiProvider}
+              />
               <p className="muted panel-intro">
                 Summarized review comments, feedback, and conversation on this PR.
               </p>
@@ -210,7 +268,11 @@ export default function PrReport() {
 
           {tab === "analysis" && (
             <section className="panel">
-              <h3>Analysis breakdown</h3>
+              <div className="panel-heading">
+                <h3>Analysis breakdown</h3>
+                <AiSourceBadge source="rules" />
+              </div>
+              <p className="muted panel-intro">Risk dimensions and findings are generated by rule-based analyzers.</p>
               <div className="dimensions">
                 {report.dimensions.map((dim) => (
                   <details key={dim.name} className="dimension" open={dim.score >= 25}>
@@ -218,6 +280,9 @@ export default function PrReport() {
                       <span>{dim.name}</span>
                       <span className="dim-score">{dim.score}</span>
                     </summary>
+                    <p className="dim-summary-row">
+                      <AiSourceBadge source="rules" />
+                    </p>
                     <p className="dim-summary">{dim.summary}</p>
                     <ul className="finding-list">
                       {dim.findings.length === 0 && <li className="finding-empty muted">No findings</li>}
@@ -248,9 +313,7 @@ export default function PrReport() {
 
           <p className="muted footer-note">
             Generated {new Date(report.generatedAt).toLocaleString()}
-            {report.aiProvider && (
-              <> · AI: {report.aiProvider} ({report.aiSummariesUsed} AI summaries)</>
-            )}
+            <AiFooterBreakdown report={report} />
           </p>
         </div>
       )}

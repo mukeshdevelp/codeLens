@@ -108,12 +108,81 @@ button, .btn { cursor: pointer; border: none; font: inherit; }
   border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem;
 }
 .panel h3 { margin-top: 0; }
+.panel-heading {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+  flex-wrap: wrap; margin-bottom: 0.85rem;
+}
+.panel-heading h3 { margin: 0; }
+.dim-summary-row { margin: 0.75rem 0 0.35rem; }
+.discussion-summary .summary-badge { margin-bottom: 0.5rem; }
+
+/* Overview tab */
+.overview-section { display: grid; gap: 1rem; }
+.overview-panel {
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+}
+.overview-highlight {
+  padding: 1rem 1.1rem;
+  border-radius: 10px;
+  border: 1px solid rgba(91, 140, 255, 0.25);
+  border-left: 4px solid var(--accent);
+  background: rgba(91, 140, 255, 0.06);
+}
+.overview-highlight-exec {
+  border-color: rgba(124, 92, 255, 0.25);
+  border-left-color: var(--accent-2);
+  background: rgba(124, 92, 255, 0.06);
+}
+.overview-exec-text { margin: 0; line-height: 1.65; color: var(--text); }
+.pr-overview { font-size: 1.05rem; line-height: 1.7; margin: 0; }
+
 .focus-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.75rem; }
-.focus-list li { border-left: 3px solid var(--border); padding-left: 0.75rem; display: grid; gap: 0.2rem; }
-.focus-high { border-left-color: var(--high) !important; }
-.focus-medium { border-left-color: var(--medium) !important; }
-.focus-low { border-left-color: var(--low) !important; }
-.focus-list code { font-size: 0.8rem; color: var(--muted); }
+.focus-card {
+  padding: 0.9rem 1rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: rgba(11, 16, 32, 0.45);
+  display: grid;
+  gap: 0.45rem;
+  list-style: none;
+}
+.focus-card.focus-high {
+  border-left: 4px solid var(--high);
+  background: rgba(255, 107, 107, 0.06);
+  border-color: rgba(255, 107, 107, 0.3);
+}
+.focus-card.focus-medium {
+  border-left: 4px solid var(--medium);
+  background: rgba(255, 209, 102, 0.05);
+  border-color: rgba(255, 209, 102, 0.28);
+}
+.focus-card.focus-low {
+  border-left: 4px solid var(--low);
+  background: rgba(6, 214, 160, 0.05);
+  border-color: rgba(6, 214, 160, 0.28);
+}
+.focus-card.focus-info {
+  border-left: 4px solid var(--accent);
+  background: rgba(91, 140, 255, 0.05);
+  border-color: rgba(91, 140, 255, 0.25);
+}
+.focus-card-header { display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap; }
+.focus-card-title { font-size: 0.95rem; }
+.focus-card-reason { margin: 0; line-height: 1.55; color: var(--muted); font-size: 0.9rem; }
+.focus-card-files {
+  display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+  margin-top: 0.1rem;
+  padding: 0.45rem 0.65rem;
+  background: rgba(36, 48, 68, 0.8);
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+.focus-file-label {
+  font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--muted); font-weight: 600;
+}
+.focus-card-files code { background: transparent; padding: 0; font-size: 0.82rem; color: var(--accent); }
 
 .dimensions { display: grid; gap: 0.75rem; }
 .dimension { background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 0.75rem 1rem; }
@@ -205,7 +274,6 @@ code { background: #243044; padding: 0.1rem 0.35rem; border-radius: 4px; font-si
 .pr-stats { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin-top: 0.5rem; font-size: 0.9rem; color: var(--muted); }
 .btn-sm { padding: 0.35rem 0.65rem; font-size: 0.8rem; }
 .panel-intro { margin-top: -0.25rem; margin-bottom: 1rem; }
-.pr-overview { font-size: 1.05rem; line-height: 1.7; }
 
 /* File walkthrough */
 .walkthrough-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
@@ -239,9 +307,30 @@ code { background: #243044; padding: 0.1rem 0.35rem; border-radius: 4px; font-si
 }
 .summary-badge-ai { background: rgba(124,92,255,0.2); color: #c4b5fd; }
 .summary-badge-rules { background: rgba(255,255,255,0.08); color: var(--muted); }
+.commits-section { margin-bottom: 1.25rem; }
+.commits-section h4, .walkthrough-files-heading {
+  margin: 0 0 0.65rem; font-size: 0.95rem; color: var(--muted); font-weight: 600;
+}
+.commit-timeline-header {
+  display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; margin-bottom: 0.65rem;
+}
+.commit-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.55rem; }
+.commit-card {
+  padding: 0.75rem 0.9rem; border-radius: 10px;
+  border: 1px solid var(--border); border-left: 4px solid var(--accent);
+  background: rgba(91, 140, 255, 0.05);
+}
+.commit-card-top { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem; }
+.commit-index { font-size: 0.75rem; font-weight: 700; color: var(--accent); }
+.commit-sha { font-family: ui-monospace, monospace; font-size: 0.8rem; color: var(--accent); }
+.commit-author { font-size: 0.85rem; color: var(--muted); }
+.commit-date { font-size: 0.8rem; margin-left: auto; }
+.commit-message { margin: 0; line-height: 1.5; font-size: 0.9rem; }
+.commit-stats { display: flex; gap: 0.4rem; margin-top: 0.35rem; font-family: ui-monospace, monospace; font-size: 0.8rem; }
 
 /* Diff viewer */
-.diff-viewer { border: 1px solid var(--border); border-radius: 8px; overflow: auto; max-height: 480px; background: #0d1117; }
+.diff-viewer { border: 1px solid var(--border); border-radius: 8px; overflow: auto; max-height: 70vh; background: #0d1117; }
+.diff-viewer-full { max-height: none; }
 .diff-pre { margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.78rem; line-height: 1.45; }
 .diff-line { padding: 0 0.75rem; white-space: pre-wrap; word-break: break-word; }
 .diff-hunk { color: #79c0ff; background: rgba(56,139,253,0.1); }
@@ -249,7 +338,13 @@ code { background: #243044; padding: 0.1rem 0.35rem; border-radius: 4px; font-si
 .diff-del { background: rgba(248,81,73,0.15); color: #ffb4b4; }
 .diff-stat-add { color: var(--low); }
 .diff-stat-del { color: var(--high); }
-.diff-empty, .diff-truncated { padding: 0.75rem; margin: 0; font-size: 0.85rem; }
+.diff-empty-wrap { display: grid; gap: 0.5rem; }
+.diff-empty { padding: 0.75rem; margin: 0; font-size: 0.85rem; }
+.diff-footer {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem;
+  padding: 0.55rem 0.75rem; border-top: 1px solid var(--border); background: rgba(255,255,255,0.02);
+}
+.diff-line-count { font-size: 0.8rem; margin-right: auto; }
 
 /* Review discussion */
 .discussion-summary { padding: 0.75rem 1rem; background: var(--surface-2); border-radius: 10px; margin-bottom: 1rem; line-height: 1.7; }

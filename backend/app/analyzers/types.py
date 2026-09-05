@@ -57,6 +57,17 @@ class FileChangeSummary:
 
 
 @dataclass
+class PrCommit:
+    sha: str
+    message: str
+    author: str
+    date: str
+    html_url: str
+    additions: int = 0
+    deletions: int = 0
+
+
+@dataclass
 class ReviewActivity:
     type: str
     author: str
@@ -80,9 +91,12 @@ class AnalysisReport:
     file_changes: list[FileChangeSummary] = field(default_factory=list)
     discussion_summary: str = ""
     review_activity: list[ReviewActivity] = field(default_factory=list)
+    commits: list[PrCommit] = field(default_factory=list)
     ai_provider: str = ""
     ai_summaries_used: int = 0
     executive_summary_source: str = "rules"
+    pr_overview_source: str = "rules"
+    discussion_summary_source: str = "rules"
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -119,6 +133,18 @@ class AnalysisReport:
                 }
                 for a in self.review_activity
             ],
+            "commits": [
+                {
+                    "sha": c.sha,
+                    "message": c.message,
+                    "author": c.author,
+                    "date": c.date,
+                    "htmlUrl": c.html_url,
+                    "additions": c.additions,
+                    "deletions": c.deletions,
+                }
+                for c in self.commits
+            ],
             "focusAreas": [
                 {
                     "rank": f.rank,
@@ -152,4 +178,12 @@ class AnalysisReport:
             "aiProvider": self.ai_provider,
             "aiSummariesUsed": self.ai_summaries_used,
             "executiveSummarySource": self.executive_summary_source,
+            "prOverviewSource": self.pr_overview_source,
+            "discussionSummarySource": self.discussion_summary_source,
+            "aiSummaryBreakdown": {
+                "executiveSummary": self.executive_summary_source,
+                "prOverview": self.pr_overview_source,
+                "discussionSummary": self.discussion_summary_source,
+                "fileChanges": sum(1 for f in self.file_changes if f.summary_source == "ai"),
+            },
         }

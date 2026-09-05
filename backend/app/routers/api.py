@@ -117,13 +117,29 @@ async def analyze_pr(
     gh = GitHubClient(user.access_token)
     pr = await gh.get_pull(owner, repo, number)
     files = await gh.list_pr_files(owner, repo, number)
+    raw_commits = await gh.list_pr_commits(owner, repo, number)
     activity = await fetch_pr_discussion(gh, owner, repo, number)
+    commits = [
+        {
+            "sha": c["sha"],
+            "message": (c.get("commit", {}).get("message") or "").strip(),
+            "author": (c.get("author") or {}).get("login")
+            or (c.get("commit", {}).get("author") or {}).get("name")
+            or "unknown",
+            "date": (c.get("commit", {}).get("author") or {}).get("date", ""),
+            "htmlUrl": c.get("html_url", ""),
+            "additions": sum(f.get("additions", 0) for f in c.get("files", [])),
+            "deletions": sum(f.get("deletions", 0) for f in c.get("files", [])),
+        }
+        for c in raw_commits
+    ]
     pr_meta = {
         "author": pr["user"]["login"],
         "state": pr["state"],
         "additions": pr.get("additions", 0),
         "deletions": pr.get("deletions", 0),
         "changedFiles": pr.get("changed_files", len(files)),
+        "commitCount": len(commits),
         "htmlUrl": pr.get("html_url"),
     }
     report = await analyze_pull_request(
@@ -132,6 +148,7 @@ async def analyze_pr(
         files,
         pr_meta=pr_meta,
         review_activity=activity,
+        commits=commits,
     )
 
     result = await db.execute(

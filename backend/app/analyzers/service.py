@@ -22,7 +22,7 @@ from app.analyzers.summarize import (
     summarize_file_changes,
     summarize_pr_overview,
 )
-from app.analyzers.types import AnalysisReport, FileChange, FileChangeSummary, FocusArea, ReviewActivity
+from app.analyzers.types import AnalysisReport, FileChange, FileChangeSummary, FocusArea, PrCommit, ReviewActivity
 from app.config import settings
 
 
@@ -33,6 +33,7 @@ async def analyze_pull_request(
     use_ai: bool = True,
     pr_meta: dict | None = None,
     review_activity: list[dict] | None = None,
+    commits: list[dict] | None = None,
 ) -> AnalysisReport:
     dimensions = [
         analyze_volume(files),
@@ -61,13 +62,23 @@ async def analyze_pull_request(
 
     pr_overview = rule_based_pr_overview(title, body, files)
     discussion_summary = rule_based_discussion_summary(review_activity or [])
+    pr_overview_source = "rules"
+    discussion_source = "rules"
     file_change_dicts: list[dict] = []
     ai_file_count = 0
+    ai_total_count = 1 if exec_source == "ai" else 0
 
     if use_ai:
-        pr_overview, _ = await summarize_pr_overview(title, body, files)
+        pr_overview, used_pr = await summarize_pr_overview(title, body, files)
+        if used_pr:
+            pr_overview_source = "ai"
+            ai_total_count += 1
         file_change_dicts, ai_file_count = await summarize_file_changes(files)
-        discussion_summary, _ = await summarize_discussion(review_activity or [])
+        ai_total_count += ai_file_count
+        discussion_summary, used_disc = await summarize_discussion(review_activity or [])
+        if used_disc:
+            discussion_source = "ai"
+            ai_total_count += 1
     else:
         from app.analyzers.summarize import rule_based_file_summary
 
@@ -115,6 +126,19 @@ async def analyze_pull_request(
         for a in activity
     ]
 
+    commit_items = [
+        PrCommit(
+            sha=c.get("sha", ""),
+            message=c.get("message", ""),
+            author=c.get("author", "unknown"),
+            date=c.get("date", ""),
+            html_url=c.get("htmlUrl", ""),
+            additions=c.get("additions", 0),
+            deletions=c.get("deletions", 0),
+        )
+        for c in (commits or [])
+    ]
+
     pr_data: dict = {"title": title, "body": body}
     if pr_meta:
         pr_data.update(pr_meta)
@@ -131,7 +155,10 @@ async def analyze_pull_request(
         file_changes=file_changes,
         discussion_summary=discussion_summary,
         review_activity=review_items,
+        commits=commit_items,
         ai_provider=settings.resolved_ai_provider() if ai_is_configured() else "",
-        ai_summaries_used=ai_file_count + (1 if exec_source == "ai" else 0),
+        ai_summaries_used=ai_total_count,
         executive_summary_source=exec_source,
+        pr_overview_source=pr_overview_source,
+        discussion_summary_source=discussion_source,
     )
