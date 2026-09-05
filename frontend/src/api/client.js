@@ -9,7 +9,15 @@ async function request(path, options = {}) {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(err.detail || "Request failed");
+    const d = err.detail;
+    let message = "Request failed";
+    if (typeof d === "string") message = d;
+    else if (Array.isArray(d)) {
+      message = d.map((x) => (typeof x === "string" ? x : x.msg || JSON.stringify(x))).join("; ");
+    } else if (d && typeof d === "object" && d.message) {
+      message = d.errors?.length ? `${d.message}: ${d.errors.join("; ")}` : d.message;
+    } else if (d) message = JSON.stringify(d);
+    throw new Error(message);
   }
   return res.json();
 }
@@ -40,6 +48,15 @@ export const api = {
     ),
   embedReport: (owner, repo, number, token) =>
     request(`/api/github/embed/${owner}/${repo}/pulls/${number}/report?token=${encodeURIComponent(token)}`),
+  prActions: (owner, repo, number) =>
+    request(`/api/repos/${owner}/${repo}/pulls/${number}/actions`),
+  approvePr: (owner, repo, number) =>
+    request(`/api/repos/${owner}/${repo}/pulls/${number}/approve`, { method: "POST" }),
+  mergePr: (owner, repo, number, mergeMethod = "merge") =>
+    request(
+      `/api/repos/${owner}/${repo}/pulls/${number}/merge?merge_method=${encodeURIComponent(mergeMethod)}`,
+      { method: "POST" }
+    ),
 };
 
 export function loginUrl() {

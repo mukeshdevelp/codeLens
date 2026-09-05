@@ -200,6 +200,94 @@ class GitHubClient:
             res.raise_for_status()
             return res.json()
 
+    async def get_repo(self, owner: str, repo: str) -> dict[str, Any]:
+        async with httpx.AsyncClient(timeout=30) as client:
+            res = await client.get(f"{self.base}/repos/{owner}/{repo}", headers=self._headers())
+            res.raise_for_status()
+            return res.json()
+
+    async def approve_pull_request(
+        self,
+        owner: str,
+        repo: str,
+        number: int,
+        body: str = "Approved via CodeLens after review.",
+    ) -> dict[str, Any]:
+        async with httpx.AsyncClient(timeout=30) as client:
+            res = await client.post(
+                f"{self.base}/repos/{owner}/{repo}/pulls/{number}/reviews",
+                headers=self._headers(),
+                json={"event": "APPROVE", "body": body},
+            )
+            if res.status_code >= 400:
+                raise ValueError(_github_error_detail(res))
+            return res.json()
+
+    async def merge_pull_request(
+        self,
+        owner: str,
+        repo: str,
+        number: int,
+        *,
+        merge_method: str = "merge",
+        commit_title: str | None = None,
+    ) -> dict[str, Any]:
+        payload: dict[str, Any] = {"merge_method": merge_method}
+        if commit_title:
+            payload["commit_title"] = commit_title
+        async with httpx.AsyncClient(timeout=30) as client:
+            res = await client.put(
+                f"{self.base}/repos/{owner}/{repo}/pulls/{number}/merge",
+                headers=self._headers(),
+                json=payload,
+            )
+            if res.status_code >= 400:
+                raise ValueError(_github_error_detail(res))
+            return res.json()
+
+
+def _github_error_detail(res: httpx.Response) -> str:
+    try:
+        data = res.json()
+        msg = data.get("message") or res.reason_phrase or "GitHub API error"
+        errors = data.get("errors")
+        if errors:
+            parts: list[str] = []
+            for item in errors:
+                if isinstance(item, str):
+                    parts.append(item)
+                elif isinstance(item, dict):
+                    parts.append(item.get("message") or str(item))
+                else:
+                    parts.append(str(item))
+            msg = f"{msg}: {'; '.join(parts)}"
+        return msg
+    except Exception:
+        return res.text or res.reason_phrase or "GitHub API error"
+
+
+def pr_author_login(pr: dict[str, Any]) -> str | None:
+    return (pr.get("user") or {}).get("login")
+
+
+def user_has_approved_pr(reviews: list[dict[str, Any]], login: str) -> bool:
+    return any(
+        r.get("user", {}).get("login") == login and r.get("state") == "APPROVED"
+        for r in reviews
+    )
+
+
+def can_user_approve_pr(pr: dict[str, Any], login: str, reviews: list[dict[str, Any]]) -> tuple[bool, str | None]:
+    """Whether the signed-in user may submit an APPROVE review (GitHub rules)."""
+    if pr.get("state") != "open":
+        return False, "Only open pull requests can be approved."
+    author = pr_author_login(pr)
+    if author and author == login:
+        return False, "GitHub does not allow approving your own pull request. You can still merge if branch protection allows."
+    if user_has_approved_pr(reviews, login):
+        return False, "You have already approved this pull request."
+    return True, None
+
 
 def github_oauth_url(state: str) -> str:
     scopes = "read:user repo"

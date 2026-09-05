@@ -68,6 +68,12 @@ export default function PrReport() {
   const [aiStatus, setAiStatus] = useState(null);
   const [ghStatus, setGhStatus] = useState(null);
   const [posting, setPosting] = useState(false);
+  const [prActions, setPrActions] = useState(null);
+  const [approving, setApproving] = useState(false);
+  const [merging, setMerging] = useState(false);
+  const [showMergeConfirm, setShowMergeConfirm] = useState(false);
+  const [mergeMethod, setMergeMethod] = useState("merge");
+  const [successMsg, setSuccessMsg] = useState("");
   const prNumber = Number(number);
 
   const isStaleReport = (data, status) => {
@@ -116,10 +122,83 @@ export default function PrReport() {
     }
   };
 
+  const refreshPrActions = async () => {
+    try {
+      setPrActions(await api.prActions(owner, repo, prNumber));
+    } catch {
+      setPrActions(null);
+    }
+  };
+
+  const approvePr = async () => {
+    setApproving(true);
+    setError("");
+    setSuccessMsg("");
+    try {
+      await api.approvePr(owner, repo, prNumber);
+      setSuccessMsg("Pull request approved on GitHub.");
+      await refreshPrActions();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setApproving(false);
+    }
+  };
+
+  const mergePr = async (method = mergeMethod) => {
+    setMerging(true);
+    setError("");
+    setSuccessMsg("");
+    setShowMergeConfirm(false);
+    try {
+      const res = await api.mergePr(owner, repo, prNumber, method);
+      setSuccessMsg(`Merged into ${res.baseRef || prActions?.baseRef || "base branch"}.`);
+      await refreshPrActions();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setMerging(false);
+    }
+  };
+
+  const approveAndMerge = async () => {
+    setMerging(true);
+    setError("");
+    setSuccessMsg("");
+    setShowMergeConfirm(false);
+    try {
+      if (prActions?.canApprove && !prActions?.userApproved) {
+        await api.approvePr(owner, repo, prNumber);
+      }
+      const res = await api.mergePr(owner, repo, prNumber, mergeMethod);
+      const prefix = prActions?.canApprove ? "Approved and merged" : "Merged";
+      setSuccessMsg(`${prefix} into ${res.baseRef || prActions?.baseRef || "base branch"}.`);
+      await refreshPrActions();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setMerging(false);
+    }
+  };
+
+  const prIsOpen = prActions?.state === "open" && !prActions?.merged;
+  const canMerge = prIsOpen && prActions?.mergeable !== false;
+  const mergeBlockedReason = prActions?.mergeableState === "dirty"
+    ? "Merge conflicts must be resolved on GitHub first."
+    : prActions?.mergeableState === "blocked"
+      ? "Required checks or reviews are blocking merge."
+      : prActions?.mergeable === null
+        ? "GitHub is still computing merge status — try again shortly."
+        : "";
+
   useEffect(() => {
     api.aiStatus().then(setAiStatus).catch(() => {});
     api.githubStatus().then(setGhStatus).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    refreshPrActions();
+  }, [owner, repo, number]);
 
   useEffect(() => {
     let cancelled = false;
@@ -162,6 +241,36 @@ export default function PrReport() {
           <PrStats pr={report?.pr} />
         </div>
         <div className="report-header-actions">
+          {prActions?.merged && (
+            <span className="pr-status-badge merged">Merged</span>
+          )}
+          {prActions && prActions.state === "closed" && !prActions.merged && (
+            <span className="pr-status-badge closed">Closed</span>
+          )}
+          {prIsOpen && (
+            <>
+              {prActions.canApprove && (
+                <button
+                  type="button"
+                  className="btn ghost"
+                  onClick={approvePr}
+                  disabled={approving || merging || prActions.userApproved}
+                  title={prActions.userApproved ? "You already approved this PR" : "Submit an APPROVE review on GitHub"}
+                >
+                  {approving ? "Approving…" : prActions.userApproved ? "Approved" : "Approve PR"}
+                </button>
+              )}
+              <button
+                type="button"
+                className="btn success"
+                onClick={() => setShowMergeConfirm(true)}
+                disabled={merging || approving || !canMerge}
+                title={mergeBlockedReason || `Merge into ${prActions.baseRef || "base branch"}`}
+              >
+                {merging ? "Merging…" : `Merge into ${prActions.baseRef || "base"}`}
+              </button>
+            </>
+          )}
           {ghStatus?.prCommentsEnabled && (
             <button type="button" className="btn ghost" onClick={postToGithub} disabled={posting || !report}>
               {posting ? "Posting…" : "Post to GitHub"}
@@ -193,6 +302,15 @@ export default function PrReport() {
       )}
       {(loading || analyzing) && <div className="page-center"><div className="spinner" /></div>}
       {error && <div className="error-banner">{error}</div>}
+      {successMsg && <div className="success-banner">{successMsg}</div>}
+      {prIsOpen && mergeBlockedReason && !error && (
+        <p className="muted merge-hint">{mergeBlockedReason}</p>
+      )}
+      {prIsOpen && prActions?.isAuthor && (
+        <p className="muted merge-hint">
+          You opened this PR — GitHub does not allow self-approval. Use <strong>Merge</strong> if you have permission.
+        </p>
+      )}
       {aiStatus?.configured && report && report.aiSummariesUsed === 0 && !analyzing && (
         <div className="error-banner">
           AI provider ({aiStatus.provider}) is configured but summaries fell back to rules.
@@ -379,6 +497,45 @@ export default function PrReport() {
             Generated {new Date(report.generatedAt).toLocaleString()}
             <AiFooterBreakdown report={report} />
           </p>
+        </div>
+      )}
+
+      {showMergeConfirm && prActions && (
+        <div className="modal-backdrop" onClick={() => !merging && setShowMergeConfirm(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+            <h3>Merge pull request?</h3>
+            <p className="muted">
+              This will merge <strong>#{number}</strong> into <code>{prActions.baseRef}</code> on GitHub.
+              {report?.riskLevel === "high" && (
+                <> This PR is flagged as <strong>high risk</strong> — confirm you have reviewed the changes.</>
+              )}
+            </p>
+            <label className="merge-method-label">
+              Merge method
+              <select
+                value={mergeMethod}
+                onChange={(e) => setMergeMethod(e.target.value)}
+                disabled={merging}
+              >
+                <option value="merge">Create a merge commit</option>
+                <option value="squash">Squash and merge</option>
+                <option value="rebase">Rebase and merge</option>
+              </select>
+            </label>
+            <div className="modal-actions">
+              <button type="button" className="btn ghost" onClick={() => setShowMergeConfirm(false)} disabled={merging}>
+                Cancel
+              </button>
+              {!prActions.userApproved && prActions.canApprove && (
+                <button type="button" className="btn ghost" onClick={approveAndMerge} disabled={merging}>
+                  {merging ? "Working…" : "Approve & merge"}
+                </button>
+              )}
+              <button type="button" className="btn success" onClick={() => mergePr()} disabled={merging}>
+                {merging ? "Merging…" : "Merge"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </Layout>
