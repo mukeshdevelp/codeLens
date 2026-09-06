@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 640" font-family="Inter, system-ui, sans-serif">
   <defs>
     <marker id="arrow" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
@@ -22,12 +23,12 @@
 
   <rect width="1000" height="640" fill="#0b1020"/>
   <text x="500" y="34" text-anchor="middle" fill="#eef2ff" font-size="20" font-weight="700">CodeLens System Architecture</text>
-  <text x="500" y="54" text-anchor="middle" fill="#9aa8c7" font-size="11">FastAPI + React · SQLite (app/db) · Docker / Kubernetes · GitHub App production path</text>
+  <text x="500" y="54" text-anchor="middle" fill="#9aa8c7" font-size="11">FastAPI + React | SQLite (app/db) | Docker / Kubernetes | GitHub App production path</text>
 
   <!-- GitHub inbound -->
   <rect x="700" y="68" width="260" height="56" rx="10" fill="#1a2440" stroke="#ffd166" stroke-width="1.5"/>
   <text x="830" y="92" text-anchor="middle" fill="#ffd166" font-size="11" font-weight="600">GitHub App webhooks</text>
-  <text x="830" y="110" text-anchor="middle" fill="#9aa8c7" font-size="10">POST /webhooks/github · HMAC verified</text>
+  <text x="830" y="110" text-anchor="middle" fill="#9aa8c7" font-size="10">POST /webhooks/github | HMAC verified</text>
   <line x1="700" y1="96" x2="620" y2="130" stroke="#ffd166" stroke-width="1.5" marker-end="url(#arrowIn)"/>
 
   <!-- Client -->
@@ -35,14 +36,14 @@
   <text x="142" y="98" text-anchor="middle" fill="#5b8cff" font-size="12" font-weight="600">CLIENT</text>
   <rect x="52" y="112" width="180" height="48" rx="8" fill="#243044" stroke="#5b8cff"/>
   <text x="142" y="134" text-anchor="middle" fill="#eef2ff" font-size="13" font-weight="600">React + Vite</text>
-  <text x="142" y="150" text-anchor="middle" fill="#9aa8c7" font-size="10">Dashboard · PR report · Embed</text>
+  <text x="142" y="150" text-anchor="middle" fill="#9aa8c7" font-size="10">Dashboard | PR report | Embed</text>
   <rect x="52" y="168" width="180" height="40" rx="8" fill="#243044" stroke="#7c5cff"/>
   <text x="142" y="188" text-anchor="middle" fill="#eef2ff" font-size="11">nginx proxy (Docker/K8s)</text>
-  <text x="142" y="202" text-anchor="middle" fill="#9aa8c7" font-size="9">:5173 dev · :8080 compose</text>
+  <text x="142" y="202" text-anchor="middle" fill="#9aa8c7" font-size="9">:5173 dev | :8080 compose</text>
 
   <!-- Backend -->
   <rect x="280" y="68" width="400" height="380" rx="14" fill="url(#backendGrad)" stroke="#2a3654" stroke-width="2"/>
-  <text x="480" y="94" text-anchor="middle" fill="#5b8cff" font-size="12" font-weight="600">FASTAPI BACKEND · :8000</text>
+  <text x="480" y="94" text-anchor="middle" fill="#5b8cff" font-size="12" font-weight="600">FASTAPI BACKEND | :8000</text>
 
   <!-- Routers row -->
   <rect x="300" y="108" width="88" height="40" rx="7" fill="#243044" stroke="#7c5cff"/>
@@ -58,7 +59,7 @@
   <!-- Pipeline center -->
   <rect x="330" y="168" width="300" height="52" rx="10" fill="#243044" stroke="#06d6a0" stroke-width="2"/>
   <text x="480" y="192" text-anchor="middle" fill="#06d6a0" font-size="12" font-weight="600">analyze_pipeline</text>
-  <text x="480" y="210" text-anchor="middle" fill="#9aa8c7" font-size="10">OAuth UI · webhooks · Checks re-sync</text>
+  <text x="480" y="210" text-anchor="middle" fill="#9aa8c7" font-size="10">OAuth UI | webhooks | Checks re-sync</text>
 
   <!-- Analyzers -->
   <rect x="300" y="238" width="130" height="56" rx="8" fill="#243044" stroke="#06d6a0"/>
@@ -78,18 +79,18 @@
   <!-- Services -->
   <rect x="300" y="310" width="360" height="56" rx="8" fill="#1a2440" stroke="#2a3654"/>
   <text x="480" y="330" text-anchor="middle" fill="#9aa8c7" font-size="10" font-weight="600">services</text>
-  <text x="480" y="348" text-anchor="middle" fill="#eef2ff" font-size="9">github · github_app · checks · pr_comments · commits · discussion · diff</text>
-  <text x="480" y="360" text-anchor="middle" fill="#9aa8c7" font-size="9">approve / merge · embed tokens · installations</text>
+  <text x="480" y="348" text-anchor="middle" fill="#eef2ff" font-size="9">github | github_app | checks | pr_comments | commits | discussion | diff</text>
+  <text x="480" y="360" text-anchor="middle" fill="#9aa8c7" font-size="9">approve / merge | embed tokens | installations</text>
 
   <!-- Database -->
   <rect x="340" y="382" width="280" height="52" rx="10" fill="#243044" stroke="#9aa8c7" stroke-width="1.5"/>
-  <text x="480" y="406" text-anchor="middle" fill="#eef2ff" font-size="12" font-weight="600">app/db · SQLite</text>
-  <text x="480" y="424" text-anchor="middle" fill="#9aa8c7" font-size="9">users · pr_reports · installations · webhook_deliveries · check_runs</text>
+  <text x="480" y="406" text-anchor="middle" fill="#eef2ff" font-size="12" font-weight="600">app/db | SQLite</text>
+  <text x="480" y="424" text-anchor="middle" fill="#9aa8c7" font-size="9">users | pr_reports | installations | webhook_deliveries | check_runs</text>
 
   <!-- MCP optional -->
   <rect x="32" y="240" width="220" height="56" rx="10" fill="#121a2f" stroke="#2a3654" stroke-dasharray="5 4"/>
   <text x="142" y="264" text-anchor="middle" fill="#9aa8c7" font-size="11" font-weight="600">MCP server (optional)</text>
-  <text x="142" y="282" text-anchor="middle" fill="#9aa8c7" font-size="9">mcp_server.py · Cursor IDE tools</text>
+  <text x="142" y="282" text-anchor="middle" fill="#9aa8c7" font-size="9">mcp_server.py | Cursor IDE tools</text>
 
   <!-- External -->
   <rect x="700" y="148" width="260" height="300" rx="12" fill="url(#extGrad)" stroke="#2a3654" stroke-width="2"/>
@@ -97,7 +98,7 @@
 
   <rect x="720" y="192" width="220" height="44" rx="8" fill="#243044" stroke="#ff6b6b"/>
   <text x="830" y="212" text-anchor="middle" fill="#eef2ff" font-size="11" font-weight="600">GitHub REST API</text>
-  <text x="830" y="228" text-anchor="middle" fill="#9aa8c7" font-size="9">OAuth token · App installation token</text>
+  <text x="830" y="228" text-anchor="middle" fill="#9aa8c7" font-size="9">OAuth token | App installation token</text>
 
   <rect x="720" y="248" width="220" height="40" rx="8" fill="#243044" stroke="#7c5cff"/>
   <text x="830" y="272" text-anchor="middle" fill="#eef2ff" font-size="11">Groq / OpenAI / OpenRouter</text>

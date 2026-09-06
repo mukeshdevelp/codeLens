@@ -1,3 +1,5 @@
+"""CodeLens FastAPI application entry point."""
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -53,4 +55,5 @@ async def startup() -> None:
 
 @app.get("/health")
 async def health():
+    """Liveness probe for Docker, Kubernetes, and load balancers."""
     return {"status": "ok", "service": "codelens-api"}

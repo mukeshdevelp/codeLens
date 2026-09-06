@@ -9,7 +9,6 @@ CodeLens is a GitHub-based tool that analyzes pull requests and gives reviewers 
 ## Table of contents
 
 - [Product Requirements Document](#product-requirements-document)
-- [PRD viability tracker (viable.md)](./viable.md)
 - [Implementation status](#implementation-status)
 - [Problem](#problem)
 - [Architecture](#architecture)

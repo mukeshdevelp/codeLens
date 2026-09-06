@@ -1,3 +1,5 @@
+"""SQLAlchemy engine, session factory, and SQLite schema bootstrap."""
+
 from collections.abc import AsyncGenerator
 from pathlib import Path
 
@@ -10,6 +12,7 @@ DB_DIR = Path(__file__).resolve().parent
 
 
 def default_database_url() -> str:
+    """Default SQLite path under ``app/db/codelens.db``."""
     return f"sqlite+aiosqlite:///{DB_DIR / 'codelens.db'}"
 
 
@@ -22,11 +25,13 @@ class Base(DeclarativeBase):
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    """Yield a request-scoped async database session."""
     async with SessionLocal() as session:
         yield session
 
 
 async def init_db() -> None:
+    """Create tables and apply lightweight SQLite column migrations on startup."""
     from app.db import models  # noqa: F401
 
     DB_DIR.mkdir(parents=True, exist_ok=True)

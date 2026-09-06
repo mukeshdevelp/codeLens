@@ -1,3 +1,5 @@
+"""REST API routes for repos, PR analysis, AI status, and GitHub review actions."""
+
 from __future__ import annotations
 
 import json
@@ -71,6 +73,7 @@ async def demo_analyze():
 
 @router.get("/repos")
 async def list_repos(user: Annotated[User, Depends(get_current_user)]):
+    """List GitHub repositories visible to the signed-in user."""
     gh = GitHubClient(user.access_token)
     repos = await gh.list_repos()
     return [

@@ -1,3 +1,5 @@
+"""GitHub REST API client, OAuth URL helpers, and PR review/merge actions."""
+
 from __future__ import annotations
 
 import base64
@@ -10,7 +12,10 @@ from app.config import settings
 
 
 class GitHubClient:
+    """Async GitHub REST v3 client with pagination and PR workflow helpers."""
+
     def __init__(self, access_token: str):
+        """Authenticate requests with a user OAuth token or App installation token."""
         self.access_token = access_token
         self.base = "https://api.github.com"
 
@@ -213,6 +218,7 @@ class GitHubClient:
         number: int,
         body: str = "Approved via CodeLens after review.",
     ) -> dict[str, Any]:
+        """Submit an APPROVE pull request review on GitHub."""
         async with httpx.AsyncClient(timeout=30) as client:
             res = await client.post(
                 f"{self.base}/repos/{owner}/{repo}/pulls/{number}/reviews",
@@ -232,6 +238,7 @@ class GitHubClient:
         merge_method: str = "merge",
         commit_title: str | None = None,
     ) -> dict[str, Any]:
+        """Merge a pull request via GitHub (merge, squash, or rebase)."""
         payload: dict[str, Any] = {"merge_method": merge_method}
         if commit_title:
             payload["commit_title"] = commit_title
@@ -267,10 +274,12 @@ def _github_error_detail(res: httpx.Response) -> str:
 
 
 def pr_author_login(pr: dict[str, Any]) -> str | None:
+    """Return the GitHub login of the pull request author."""
     return (pr.get("user") or {}).get("login")
 
 
 def user_has_approved_pr(reviews: list[dict[str, Any]], login: str) -> bool:
+    """True if the given user already left an APPROVED review on this PR."""
     return any(
         r.get("user", {}).get("login") == login and r.get("state") == "APPROVED"
         for r in reviews
@@ -290,6 +299,7 @@ def can_user_approve_pr(pr: dict[str, Any], login: str, reviews: list[dict[str, 
 
 
 def github_oauth_url(state: str) -> str:
+    """Build the GitHub OAuth authorize URL with CSRF ``state`` and repo scope."""
     scopes = "read:user repo"
     return (
         "https://github.com/login/oauth/authorize"
@@ -301,6 +311,7 @@ def github_oauth_url(state: str) -> str:
 
 
 async def exchange_code_for_token(code: str) -> str:
+    """Exchange OAuth authorization code for a GitHub access token."""
     async with httpx.AsyncClient(timeout=30) as client:
         res = await client.post(
             "https://github.com/login/oauth/access_token",

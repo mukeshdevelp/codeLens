@@ -1,3 +1,5 @@
+"""Shared datatypes for analyzer inputs, findings, and serialized PR reports."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -8,6 +10,8 @@ Severity = Literal["high", "medium", "low", "info"]
 
 @dataclass
 class FileChange:
+    """One file entry from a GitHub pull request diff."""
+
     filename: str
     status: str
     additions: int
@@ -17,6 +21,8 @@ class FileChange:
 
 @dataclass
 class Finding:
+    """A single explainable analyzer signal with severity and evidence."""
+
     id: str
     category: str
     severity: Severity
@@ -27,6 +33,8 @@ class Finding:
 
 @dataclass
 class DimensionResult:
+    """Score and findings for one PRD analysis dimension."""
+
     name: str
     score: int
     summary: str
@@ -35,6 +43,8 @@ class DimensionResult:
 
 @dataclass
 class FocusArea:
+    """Ranked area where reviewers should focus first."""
+
     rank: int
     area: str
     reason: str
@@ -92,6 +102,8 @@ class ReviewActivity:
 
 @dataclass
 class AnalysisReport:
+    """Full PR analysis payload returned to the API and cached in SQLite."""
+
     pr: dict[str, Any]
     risk_level: Severity
     risk_score: int
@@ -111,6 +123,7 @@ class AnalysisReport:
     discussion_summary_source: str = "rules"
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize report for JSON API responses and ``pr_reports.report_json``."""
         return {
             "pr": self.pr,
             "riskLevel": self.risk_level,

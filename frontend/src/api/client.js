@@ -1,3 +1,10 @@
+/** HTTP client for CodeLens backend API (proxied via Vite or nginx). */
+
+/**
+ * @param {string} path
+ * @param {RequestInit} [options]
+ * @returns {Promise<any>}
+ */
 async function request(path, options = {}) {
   const res = await fetch(path, {
     ...options,
@@ -59,6 +66,7 @@ export const api = {
     ),
 };
 
+/** URL to start GitHub OAuth login flow. */
 export function loginUrl() {
   return "/auth/github";
 }

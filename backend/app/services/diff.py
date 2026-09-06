@@ -1,3 +1,5 @@
+"""Unified diff helpers when GitHub omits per-file patches."""
+
 from __future__ import annotations
 
 import difflib
@@ -6,6 +8,7 @@ MAX_PATCH_LINES = 4000
 
 
 def make_unified_diff(old: str, new: str, filename: str) -> str:
+    """Build a capped unified diff string between two file versions."""
     diff_lines = list(
         difflib.unified_diff(
             old.splitlines(keepends=True),

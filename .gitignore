@@ -10,4 +10,5 @@ frontend/dist/
 *.log
 .DS_Store
 keys-command/
-.env.example
+.reports/
+.cursor/

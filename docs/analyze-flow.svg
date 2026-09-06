@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 780" font-family="Inter, system-ui, sans-serif">
   <defs>
     <marker id="arrowSeq" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
@@ -13,7 +14,7 @@
 
   <rect width="1040" height="780" fill="#0b1020"/>
   <text x="520" y="34" text-anchor="middle" fill="#eef2ff" font-size="20" font-weight="700">PR Analysis &amp; Review Flow</text>
-  <text x="520" y="54" text-anchor="middle" fill="#9aa8c7" font-size="11">OAuth UI · GitHub App webhooks · shared analyze_pipeline</text>
+  <text x="520" y="54" text-anchor="middle" fill="#9aa8c7" font-size="11">OAuth UI | GitHub App webhooks | shared analyze_pipeline</text>
 
   <!-- Participants -->
   <rect x="24" y="72" width="88" height="34" rx="8" fill="#243044" stroke="#5b8cff"/>
@@ -46,7 +47,7 @@
 
   <!-- LOGIN -->
   <rect x="24" y="118" width="120" height="20" rx="4" fill="#1a2440" stroke="#5b8cff"/>
-  <text x="84" y="132" text-anchor="middle" fill="#5b8cff" font-size="10" font-weight="600">1 · LOGIN</text>
+  <text x="84" y="132" text-anchor="middle" fill="#5b8cff" font-size="10" font-weight="600">1 | LOGIN</text>
 
   <line x1="68" y1="148" x2="177" y2="148" stroke="#5b8cff" stroke-width="1.5" marker-end="url(#arrowSeq)"/>
   <text x="100" y="142" fill="#9aa8c7" font-size="9">Continue with GitHub</text>
@@ -61,7 +62,7 @@
 
   <!-- WEBHOOK ENTRY -->
   <rect x="24" y="242" width="200" height="20" rx="4" fill="#1a2440" stroke="#ffd166"/>
-  <text x="124" y="256" text-anchor="middle" fill="#ffd166" font-size="10" font-weight="600">2 · AUTO-ANALYZE (GitHub App)</text>
+  <text x="124" y="256" text-anchor="middle" fill="#ffd166" font-size="10" font-weight="600">2 | AUTO-ANALYZE (GitHub App)</text>
 
   <line x1="422" y1="278" x2="307" y2="278" stroke="#ffd166" stroke-width="1.5" marker-end="url(#arrowSeq)"/>
   <text x="330" y="272" fill="#9aa8c7" font-size="9">POST /webhooks/github (HMAC)</text>
@@ -71,7 +72,7 @@
 
   <!-- MANUAL ANALYZE -->
   <rect x="24" y="328" width="200" height="20" rx="4" fill="#1a2440" stroke="#06d6a0"/>
-  <text x="124" y="342" text-anchor="middle" fill="#06d6a0" font-size="10" font-weight="600">3 · MANUAL ANALYZE (Dashboard)</text>
+  <text x="124" y="342" text-anchor="middle" fill="#06d6a0" font-size="10" font-weight="600">3 | MANUAL ANALYZE (Dashboard)</text>
 
   <line x1="68" y1="364" x2="177" y2="364" stroke="#5b8cff" stroke-width="1.5" marker-end="url(#arrowSeq)"/>
   <text x="88" y="358" fill="#9aa8c7" font-size="9">Open PR / Re-analyze</text>
@@ -82,7 +83,7 @@
 
   <!-- SHARED PIPELINE -->
   <rect x="24" y="418" width="220" height="20" rx="4" fill="#1a2440" stroke="#06d6a0"/>
-  <text x="134" y="432" text-anchor="middle" fill="#06d6a0" font-size="10" font-weight="600">4 · SHARED PIPELINE</text>
+  <text x="134" y="432" text-anchor="middle" fill="#06d6a0" font-size="10" font-weight="600">4 | SHARED PIPELINE</text>
 
   <line x1="302" y1="452" x2="417" y2="452" stroke="#5b8cff" stroke-width="1.5" marker-end="url(#arrowSeq)"/>
   <text x="310" y="446" fill="#9aa8c7" font-size="9">PR, files, commits, reviews</text>
@@ -108,7 +109,7 @@
 
   <!-- OPTIONAL SIDE EFFECTS -->
   <rect x="24" y="612" width="240" height="20" rx="4" fill="#1a2440" stroke="#ffd166"/>
-  <text x="144" y="626" text-anchor="middle" fill="#ffd166" font-size="10" font-weight="600">5 · OPTIONAL (production)</text>
+  <text x="144" y="626" text-anchor="middle" fill="#ffd166" font-size="10" font-weight="600">5 | OPTIONAL (production)</text>
 
   <line x1="302" y1="648" x2="417" y2="648" stroke="#ffd166" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrowOpt)"/>
   <text x="310" y="642" fill="#9aa8c7" font-size="9">sync GitHub Check Run</text>
@@ -118,7 +119,7 @@
   <line x1="302" y1="692" x2="187" y2="692" stroke="#06d6a0" stroke-width="1.5" marker-end="url(#arrowReturn)"/>
   <text x="210" y="686" fill="#9aa8c7" font-size="9">report JSON to UI</text>
   <line x1="182" y1="710" x2="73" y2="710" stroke="#06d6a0" stroke-width="1.5" marker-end="url(#arrowReturn)"/>
-  <text x="88" y="704" fill="#9aa8c7" font-size="9">5 tabs: Overview · Changes · Commits · Discussion · Risk</text>
+  <text x="88" y="704" fill="#9aa8c7" font-size="9">5 tabs: Overview | Changes | Commits | Discussion | Risk</text>
 
   <!-- REVIEW ACTIONS -->
   <rect x="850" y="118" width="170" height="200" rx="10" fill="#121a2f" stroke="#2a3654"/>
@@ -133,5 +134,5 @@
 
   <!-- Footer -->
   <rect x="24" y="738" width="992" height="32" rx="8" fill="#121a2f" stroke="#2a3654"/>
-  <text x="40" y="758" fill="#eef2ff" font-size="10">Report: risk level · executive summary · PR overview · file walkthrough · commit diffs · discussion summary · dimension findings with evidence · AI/Rules badges</text>
+  <text x="40" y="758" fill="#eef2ff" font-size="10">Report: risk level | executive summary | PR overview | file walkthrough | commit diffs | discussion summary | dimension findings with evidence | AI/Rules badges</text>
 </svg>

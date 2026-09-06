@@ -1,3 +1,5 @@
+"""Rule-based and AI-assisted text summaries for PR overview, files, and discussion."""
+
 from __future__ import annotations
 
 import asyncio

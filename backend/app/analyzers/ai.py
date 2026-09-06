@@ -1,3 +1,5 @@
+"""OpenAI-compatible LLM client for optional Groq/OpenAI PR summaries."""
+
 from __future__ import annotations
 
 import json
@@ -34,10 +36,12 @@ _last_ai_error: str | None = None
 
 
 def get_last_ai_error() -> str | None:
+    """Return the most recent AI provider error message, if any."""
     return _last_ai_error
 
 
 def ai_is_configured() -> bool:
+    """True when an API key is available for the configured AI provider."""
     return bool(settings.resolved_ai_key())
 
 
@@ -131,6 +135,7 @@ async def summarize_with_cursor(
     dimensions,
     focus_areas,
 ) -> tuple[str, bool]:
+    """Generate executive summary via AI; returns (text, used_ai). Falls back to rules on failure."""
     fallback = rule_based_summary(risk_level_value, compute_risk_score(dimensions), dimensions, focus_areas)
     payload = {
         "title": title,

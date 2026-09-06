@@ -1,3 +1,9 @@
+"""Rule-based PR analysis engine.
+
+Scores pull requests across PRD dimensions (volume, drift, functionality,
+critical paths, security, test coverage) and builds explainable findings.
+"""
+
 from __future__ import annotations
 
 import re
@@ -45,6 +51,7 @@ WEIGHTS = {
 
 
 def analyze_volume(files: list[FileChange], repo_average: int = 200) -> DimensionResult:
+    """Score PR size vs a baseline and flag unusually large files."""
     additions = sum(f.additions for f in files)
     deletions = sum(f.deletions for f in files)
     total = additions + deletions
@@ -75,6 +82,7 @@ def _top_level_dirs(files: list[FileChange]) -> list[str]:
 
 
 def detect_scope_drift(title: str, body: str | None, files: list[FileChange]) -> DimensionResult:
+    """Detect when changes span more modules than the PR title/body suggests."""
     findings: list[Finding] = []
     dirs = _top_level_dirs(files)
     stated = set(re.findall(r"\b[a-z]{4,}\b", f"{title} {body or ''}".lower()))
@@ -94,6 +102,7 @@ def detect_scope_drift(title: str, body: str | None, files: list[FileChange]) ->
 
 
 def analyze_functionality(files: list[FileChange]) -> DimensionResult:
+    """Judge whether edits cluster in one area or are scattered across modules."""
     clusters = _cluster_dirs(files)
     findings: list[Finding] = []
     if len(clusters) == 1:
@@ -105,6 +114,7 @@ def analyze_functionality(files: list[FileChange]) -> DimensionResult:
 
 
 def detect_critical_paths(files: list[FileChange]) -> DimensionResult:
+    """Flag touches to auth, payments, permissions, data, infra, or API paths."""
     findings: list[Finding] = []
     seen: set[str] = set()
     labels: set[str] = set()
@@ -126,6 +136,7 @@ def detect_critical_paths(files: list[FileChange]) -> DimensionResult:
 
 
 def scan_security(files: list[FileChange]) -> DimensionResult:
+    """Scan added diff lines for secrets and unsafe patterns (eval, SQL concat, XSS)."""
     findings: list[Finding] = []
     for f in files:
         for i, line in enumerate((f.patch or "").split("\n")):
@@ -151,6 +162,7 @@ def _is_source(path: str) -> bool:
 
 
 def check_test_coverage(files: list[FileChange]) -> DimensionResult:
+    """Warn when source files change without corresponding test file updates."""
     changed = {f.filename for f in files}
     source_files = [f for f in files if _is_source(f.filename) and f.status != "removed"]
     test_files = [f for f in files if _is_test(f.filename)]
@@ -181,12 +193,14 @@ def _cluster_dirs(files: list[FileChange]) -> list[str]:
 
 
 def compute_risk_score(dimensions: list[DimensionResult]) -> int:
+    """Weighted average of dimension scores (security/critical weighted higher)."""
     weighted = sum(d.score * WEIGHTS.get(d.name, 1) for d in dimensions)
     total = sum(WEIGHTS.get(d.name, 1) for d in dimensions)
     return round(min(weighted / total, 100)) if total else 0
 
 
 def risk_level(score: int) -> str:
+    """Map numeric score to high, medium, or low risk label."""
     if score >= 55:
         return "high"
     if score >= 25:
@@ -195,6 +209,7 @@ def risk_level(score: int) -> str:
 
 
 def build_focus_areas(findings: list[Finding]) -> list[dict]:
+    """Rank top areas for reviewers from non-info findings (max 5)."""
     order = {"high": 0, "medium": 1, "low": 2, "info": 3}
     ranked = sorted([f for f in findings if f.severity != "info"], key=lambda f: order[f.severity])
     areas: dict[str, dict] = {}
@@ -214,6 +229,7 @@ def build_focus_areas(findings: list[Finding]) -> list[dict]:
 
 
 def rule_based_summary(risk_level_value: str, risk_score: int, dimensions: list[DimensionResult], focus_areas: list[dict]) -> str:
+    """Generate a short executive summary without calling an AI provider."""
     highlights = [d.name for d in dimensions if any(f.severity in ("high", "medium") for f in d.findings)]
     focus = f" Start with: {', '.join(a['area'] for a in focus_areas[:3])}." if focus_areas else ""
     if risk_level_value == "high":

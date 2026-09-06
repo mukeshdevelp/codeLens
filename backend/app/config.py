@@ -1,3 +1,5 @@
+"""Application settings loaded from environment and optional ``.env`` files."""
+
 from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -6,6 +8,8 @@ _DEFAULT_DB_FILE = Path(__file__).resolve().parent / "db" / "codelens.db"
 
 
 class Settings(BaseSettings):
+    """Environment-backed configuration for GitHub, AI, database, and feature flags."""
+
     model_config = SettingsConfigDict(
         env_file=("../.env", ".env"),
         env_file_encoding="utf-8",

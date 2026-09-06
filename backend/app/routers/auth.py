@@ -1,3 +1,5 @@
+"""GitHub OAuth login, JWT session cookies, and current-user dependency."""
+
 from __future__ import annotations
 
 import secrets
@@ -42,6 +44,7 @@ def auth_error_redirect(reason: str = "auth_failed") -> RedirectResponse:
 
 
 async def get_current_user(request: Request, db: Annotated[AsyncSession, Depends(get_db)]) -> User:
+    """FastAPI dependency: resolve logged-in user from ``codelens_session`` cookie."""
     token = request.cookies.get("codelens_session")
     if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")

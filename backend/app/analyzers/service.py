@@ -1,3 +1,5 @@
+"""Orchestrates rule-based analyzers and optional AI summaries into an AnalysisReport."""
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -43,6 +45,7 @@ async def analyze_pull_request(
     review_activity: list[dict] | None = None,
     commits: list[dict] | None = None,
 ) -> AnalysisReport:
+    """Run all PRD dimensions, build focus areas, and optionally enrich with AI summaries."""
     dimensions = [
         analyze_volume(files),
         detect_scope_drift(title, body, files),

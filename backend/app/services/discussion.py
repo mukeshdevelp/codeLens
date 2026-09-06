@@ -1,3 +1,5 @@
+"""Fetch and normalize GitHub PR review comments for the Discussion tab."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -51,6 +53,7 @@ def collect_review_activity(
 
 
 async def fetch_pr_discussion(gh: GitHubClient, owner: str, repo: str, number: int) -> list[dict[str, Any]]:
+    """Load reviews, inline comments, and issue comments for a pull request."""
     reviews = await gh.list_pr_reviews(owner, repo, number)
     review_comments = await gh.list_pr_review_comments(owner, repo, number)
     issue_comments = await gh.list_issue_comments(owner, repo, number)
