@@ -1,0 +1,59 @@
+# CodeLens — Docker Compose (local / single-host deploy)
+#
+# Usage:
+#   cp .env.example .env   # set GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, SESSION_SECRET, AI keys
+#   docker compose up --build
+#
+# App:     http://localhost:8080
+# API:     http://localhost:8080/api  (proxied via frontend nginx)
+# Health:  http://localhost:8080/health
+#
+# GitHub OAuth callback URL for this setup:
+#   http://localhost:8080/auth/github/callback
+
+services:
+  backend:
+    build:
+      context: ./backend
+    image: codelens-backend:local
+    env_file:
+      - .env
+    environment:
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8080}
+      BACKEND_URL: ${BACKEND_URL:-http://localhost:8080}
+      GITHUB_REDIRECT_URI: ${GITHUB_REDIRECT_URI:-http://localhost:8080/auth/github/callback}
+      DATABASE_URL: sqlite+aiosqlite:////app/app/db/codelens.db
+    volumes:
+      - codelens-db:/app/app/db
+    expose:
+      - "8000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+    image: codelens-frontend:local
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    environment:
+      BACKEND_HOST: backend
+      BACKEND_PORT: 8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  codelens-db:

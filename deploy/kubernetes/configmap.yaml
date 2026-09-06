@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: codelens-config
+  namespace: codelens
+  labels:
+    app.kubernetes.io/name: codelens
+data:
+  FRONTEND_URL: "https://codelens.example.com"
+  BACKEND_URL: "https://codelens.example.com"
+  GITHUB_REDIRECT_URI: "https://codelens.example.com/auth/github/callback"
+  DATABASE_URL: "sqlite+aiosqlite:////app/app/db/codelens.db"
+  AI_PROVIDER: "groq"
+  ENABLE_GITHUB_CHECKS: "true"
+  ENABLE_GITHUB_PR_COMMENTS: "false"
+  AUTO_POST_PR_COMMENT_ON_WEBHOOK: "false"
+  GITHUB_APP_SLUG: "codelens"
+  EMBED_ALLOWED_FRAME_ANCESTORS: "https://github.com"

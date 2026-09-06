@@ -1,0 +1,26 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: codelens
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - backend-pvc.yaml
+  - backend-deployment.yaml
+  - backend-service.yaml
+  - frontend-deployment.yaml
+  - frontend-service.yaml
+  - ingress.yaml
+
+# Create secrets separately (see secret.example.yaml):
+#   cp secret.example.yaml secret.yaml  # edit values
+#   kubectl apply -f secret.yaml
+
+images:
+  - name: codelens-backend
+    newName: codelens-backend
+    newTag: latest
+  - name: codelens-frontend
+    newName: codelens-frontend
+    newTag: latest

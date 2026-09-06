@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 620" font-family="Inter, system-ui, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 780" font-family="Inter, system-ui, sans-serif">
   <defs>
     <marker id="arrowSeq" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
       <polygon points="0 0, 10 4, 0 8" fill="#5b8cff"/>
@@ -6,92 +6,132 @@
     <marker id="arrowReturn" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
       <polygon points="0 0, 10 4, 0 8" fill="#06d6a0"/>
     </marker>
+    <marker id="arrowOpt" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <polygon points="0 0, 10 4, 0 8" fill="#ffd166"/>
+    </marker>
   </defs>
 
-  <rect width="960" height="620" fill="#0b1020"/>
-  <text x="480" y="36" text-anchor="middle" fill="#eef2ff" font-size="20" font-weight="700">PR Analysis Request Flow</text>
+  <rect width="1040" height="780" fill="#0b1020"/>
+  <text x="520" y="34" text-anchor="middle" fill="#eef2ff" font-size="20" font-weight="700">PR Analysis &amp; Review Flow</text>
+  <text x="520" y="54" text-anchor="middle" fill="#9aa8c7" font-size="11">OAuth UI · GitHub App webhooks · shared analyze_pipeline</text>
 
   <!-- Participants -->
-  <rect x="30" y="60" width="110" height="36" rx="8" fill="#243044" stroke="#5b8cff"/>
-  <text x="85" y="83" text-anchor="middle" fill="#eef2ff" font-size="12" font-weight="600">User</text>
-  <line x1="85" y1="96" x2="85" y2="580" stroke="#2a3654" stroke-width="2" stroke-dasharray="6 4"/>
+  <rect x="24" y="72" width="88" height="34" rx="8" fill="#243044" stroke="#5b8cff"/>
+  <text x="68" y="94" text-anchor="middle" fill="#eef2ff" font-size="11" font-weight="600">User</text>
+  <line x1="68" y1="106" x2="68" y2="730" stroke="#2a3654" stroke-width="2" stroke-dasharray="6 4"/>
 
-  <rect x="170" y="60" width="110" height="36" rx="8" fill="#243044" stroke="#7c5cff"/>
-  <text x="225" y="83" text-anchor="middle" fill="#eef2ff" font-size="12" font-weight="600">Frontend</text>
-  <line x1="225" y1="96" x2="225" y2="580" stroke="#2a3654" stroke-width="2" stroke-dasharray="6 4"/>
+  <rect x="138" y="72" width="88" height="34" rx="8" fill="#243044" stroke="#7c5cff"/>
+  <text x="182" y="94" text-anchor="middle" fill="#eef2ff" font-size="11" font-weight="600">Frontend</text>
+  <line x1="182" y1="106" x2="182" y2="730" stroke="#2a3654" stroke-width="2" stroke-dasharray="6 4"/>
 
-  <rect x="310" y="60" width="110" height="36" rx="8" fill="#243044" stroke="#ffd166"/>
-  <text x="365" y="83" text-anchor="middle" fill="#eef2ff" font-size="12" font-weight="600">FastAPI</text>
-  <line x1="365" y1="96" x2="365" y2="580" stroke="#2a3654" stroke-width="2" stroke-dasharray="6 4"/>
+  <rect x="252" y="72" width="100" height="34" rx="8" fill="#243044" stroke="#ffd166"/>
+  <text x="302" y="94" text-anchor="middle" fill="#eef2ff" font-size="11" font-weight="600">FastAPI</text>
+  <line x1="302" y1="106" x2="302" y2="730" stroke="#2a3654" stroke-width="2" stroke-dasharray="6 4"/>
 
-  <rect x="450" y="60" width="110" height="36" rx="8" fill="#243044" stroke="#ff6b6b"/>
-  <text x="505" y="83" text-anchor="middle" fill="#eef2ff" font-size="12" font-weight="600">GitHub</text>
-  <line x1="505" y1="96" x2="505" y2="580" stroke="#2a3654" stroke-width="2" stroke-dasharray="6 4"/>
+  <rect x="378" y="72" width="88" height="34" rx="8" fill="#243044" stroke="#ff6b6b"/>
+  <text x="422" y="94" text-anchor="middle" fill="#eef2ff" font-size="11" font-weight="600">GitHub</text>
+  <line x1="422" y1="106" x2="422" y2="730" stroke="#2a3654" stroke-width="2" stroke-dasharray="6 4"/>
 
-  <rect x="590" y="60" width="110" height="36" rx="8" fill="#243044" stroke="#06d6a0"/>
-  <text x="645" y="83" text-anchor="middle" fill="#eef2ff" font-size="12" font-weight="600">Analyzers</text>
-  <line x1="645" y1="96" x2="645" y2="580" stroke="#2a3654" stroke-width="2" stroke-dasharray="6 4"/>
+  <rect x="488" y="72" width="120" height="34" rx="8" fill="#243044" stroke="#06d6a0"/>
+  <text x="548" y="94" text-anchor="middle" fill="#eef2ff" font-size="11" font-weight="600">Pipeline</text>
+  <line x1="548" y1="106" x2="548" y2="730" stroke="#2a3654" stroke-width="2" stroke-dasharray="6 4"/>
 
-  <rect x="730" y="60" width="90" height="36" rx="8" fill="#243044" stroke="#9aa8c7"/>
-  <text x="775" y="83" text-anchor="middle" fill="#eef2ff" font-size="12" font-weight="600">SQLite</text>
-  <line x1="775" y1="96" x2="775" y2="580" stroke="#2a3654" stroke-width="2" stroke-dasharray="6 4"/>
+  <rect x="630" y="72" width="88" height="34" rx="8" fill="#243044" stroke="#7c5cff"/>
+  <text x="674" y="94" text-anchor="middle" fill="#eef2ff" font-size="11" font-weight="600">Groq AI</text>
+  <line x1="674" y1="106" x2="674" y2="730" stroke="#2a3654" stroke-width="2" stroke-dasharray="6 4"/>
 
-  <!-- Phase labels -->
-  <rect x="30" y="115" width="130" height="22" rx="4" fill="#1a2440" stroke="#5b8cff"/>
-  <text x="95" y="130" text-anchor="middle" fill="#5b8cff" font-size="10" font-weight="600">LOGIN</text>
+  <rect x="742" y="72" width="88" height="34" rx="8" fill="#243044" stroke="#9aa8c7"/>
+  <text x="786" y="94" text-anchor="middle" fill="#eef2ff" font-size="11" font-weight="600">SQLite</text>
+  <line x1="786" y1="106" x2="786" y2="730" stroke="#2a3654" stroke-width="2" stroke-dasharray="6 4"/>
 
-  <!-- Login flow -->
-  <line x1="85" y1="155" x2="220" y2="155" stroke="#5b8cff" stroke-width="1.5" marker-end="url(#arrowSeq)"/>
-  <text x="130" y="148" fill="#9aa8c7" font-size="10">Login with GitHub</text>
+  <!-- LOGIN -->
+  <rect x="24" y="118" width="120" height="20" rx="4" fill="#1a2440" stroke="#5b8cff"/>
+  <text x="84" y="132" text-anchor="middle" fill="#5b8cff" font-size="10" font-weight="600">1 · LOGIN</text>
 
-  <line x1="225" y1="175" x2="360" y2="175" stroke="#5b8cff" stroke-width="1.5" marker-end="url(#arrowSeq)"/>
-  <text x="265" y="168" fill="#9aa8c7" font-size="10">GET /auth/github</text>
+  <line x1="68" y1="148" x2="177" y2="148" stroke="#5b8cff" stroke-width="1.5" marker-end="url(#arrowSeq)"/>
+  <text x="100" y="142" fill="#9aa8c7" font-size="9">Continue with GitHub</text>
+  <line x1="182" y1="166" x2="297" y2="166" stroke="#5b8cff" stroke-width="1.5" marker-end="url(#arrowSeq)"/>
+  <text x="210" y="160" fill="#9aa8c7" font-size="9">GET /auth/github</text>
+  <line x1="302" y1="184" x2="417" y2="184" stroke="#5b8cff" stroke-width="1.5" marker-end="url(#arrowSeq)"/>
+  <text x="330" y="178" fill="#9aa8c7" font-size="9">OAuth redirect</text>
+  <line x1="417" y1="202" x2="307" y2="202" stroke="#06d6a0" stroke-width="1.5" marker-end="url(#arrowReturn)"/>
+  <text x="340" y="196" fill="#9aa8c7" font-size="9">access token stored</text>
+  <line x1="302" y1="220" x2="187" y2="220" stroke="#06d6a0" stroke-width="1.5" marker-end="url(#arrowReturn)"/>
+  <text x="210" y="214" fill="#9aa8c7" font-size="9">JWT session cookie</text>
 
-  <line x1="365" y1="195" x2="500" y2="195" stroke="#5b8cff" stroke-width="1.5" marker-end="url(#arrowSeq)"/>
-  <text x="400" y="188" fill="#9aa8c7" font-size="10">OAuth redirect</text>
+  <!-- WEBHOOK ENTRY -->
+  <rect x="24" y="242" width="200" height="20" rx="4" fill="#1a2440" stroke="#ffd166"/>
+  <text x="124" y="256" text-anchor="middle" fill="#ffd166" font-size="10" font-weight="600">2 · AUTO-ANALYZE (GitHub App)</text>
 
-  <line x1="500" y1="215" x2="370" y2="215" stroke="#06d6a0" stroke-width="1.5" marker-end="url(#arrowReturn)"/>
-  <text x="410" y="208" fill="#9aa8c7" font-size="10">access token</text>
+  <line x1="422" y1="278" x2="307" y2="278" stroke="#ffd166" stroke-width="1.5" marker-end="url(#arrowSeq)"/>
+  <text x="330" y="272" fill="#9aa8c7" font-size="9">POST /webhooks/github (HMAC)</text>
+  <text x="330" y="292" fill="#9aa8c7" font-size="9">pull_request opened / synchronize</text>
+  <line x1="302" y1="310" x2="543" y2="310" stroke="#ffd166" stroke-width="1.5" marker-end="url(#arrowSeq)"/>
+  <text x="360" y="304" fill="#9aa8c7" font-size="9">run_pr_analysis (installation token)</text>
 
-  <line x1="365" y1="235" x2="230" y2="235" stroke="#06d6a0" stroke-width="1.5" marker-end="url(#arrowReturn)"/>
-  <text x="255" y="228" fill="#9aa8c7" font-size="10">session cookie</text>
+  <!-- MANUAL ANALYZE -->
+  <rect x="24" y="328" width="200" height="20" rx="4" fill="#1a2440" stroke="#06d6a0"/>
+  <text x="124" y="342" text-anchor="middle" fill="#06d6a0" font-size="10" font-weight="600">3 · MANUAL ANALYZE (Dashboard)</text>
 
-  <line x1="225" y1="255" x2="90" y2="255" stroke="#06d6a0" stroke-width="1.5" marker-end="url(#arrowReturn)"/>
-  <text x="130" y="248" fill="#9aa8c7" font-size="10">redirect /dashboard</text>
+  <line x1="68" y1="364" x2="177" y2="364" stroke="#5b8cff" stroke-width="1.5" marker-end="url(#arrowSeq)"/>
+  <text x="88" y="358" fill="#9aa8c7" font-size="9">Open PR / Re-analyze</text>
+  <line x1="182" y1="382" x2="297" y2="382" stroke="#5b8cff" stroke-width="1.5" marker-end="url(#arrowSeq)"/>
+  <text x="195" y="376" fill="#9aa8c7" font-size="9">POST .../pulls/{n}/analyze</text>
+  <line x1="302" y1="400" x2="543" y2="400" stroke="#5b8cff" stroke-width="1.5" marker-end="url(#arrowSeq)"/>
+  <text x="360" y="394" fill="#9aa8c7" font-size="9">run_pr_analysis (OAuth token)</text>
 
-  <!-- Analyze phase -->
-  <rect x="30" y="280" width="150" height="22" rx="4" fill="#1a2440" stroke="#06d6a0"/>
-  <text x="105" y="295" text-anchor="middle" fill="#06d6a0" font-size="10" font-weight="600">ANALYZE PR</text>
+  <!-- SHARED PIPELINE -->
+  <rect x="24" y="418" width="220" height="20" rx="4" fill="#1a2440" stroke="#06d6a0"/>
+  <text x="134" y="432" text-anchor="middle" fill="#06d6a0" font-size="10" font-weight="600">4 · SHARED PIPELINE</text>
 
-  <line x1="85" y1="320" x2="220" y2="320" stroke="#5b8cff" stroke-width="1.5" marker-end="url(#arrowSeq)"/>
-  <text x="115" y="313" fill="#9aa8c7" font-size="10">Select PR ’ Analyze</text>
+  <line x1="302" y1="452" x2="417" y2="452" stroke="#5b8cff" stroke-width="1.5" marker-end="url(#arrowSeq)"/>
+  <text x="310" y="446" fill="#9aa8c7" font-size="9">PR, files, commits, reviews</text>
+  <line x1="417" y1="470" x2="307" y2="470" stroke="#06d6a0" stroke-width="1.5" marker-end="url(#arrowReturn)"/>
+  <text x="320" y="464" fill="#9aa8c7" font-size="9">patches + commit diffs</text>
 
-  <line x1="225" y1="345" x2="360" y2="345" stroke="#5b8cff" stroke-width="1.5" marker-end="url(#arrowSeq)"/>
-  <text x="255" y="338" fill="#9aa8c7" font-size="9">POST .../pulls/{n}/analyze</text>
+  <line x1="302" y1="492" x2="543" y2="492" stroke="#5b8cff" stroke-width="1.5" marker-end="url(#arrowSeq)"/>
+  <text x="360" y="486" fill="#9aa8c7" font-size="9">analyze_pull_request()</text>
 
-  <line x1="365" y1="370" x2="500" y2="370" stroke="#5b8cff" stroke-width="1.5" marker-end="url(#arrowSeq)"/>
-  <text x="395" y="363" fill="#9aa8c7" font-size="10">Fetch PR + diff files</text>
+  <text x="560" y="510" fill="#9aa8c7" font-size="9">6 rule dimensions</text>
+  <text x="560" y="524" fill="#9aa8c7" font-size="9">focus areas + risk 0-100</text>
 
-  <line x1="500" y1="390" x2="370" y2="390" stroke="#06d6a0" stroke-width="1.5" marker-end="url(#arrowReturn)"/>
-  <text x="405" y="383" fill="#9aa8c7" font-size="10">PR data + patches</text>
+  <line x1="548" y1="538" x2="669" y2="538" stroke="#5b8cff" stroke-width="1.5" marker-end="url(#arrowSeq)"/>
+  <text x="575" y="532" fill="#9aa8c7" font-size="9">optional Groq summaries</text>
+  <line x1="674" y1="556" x2="553" y2="556" stroke="#06d6a0" stroke-width="1.5" marker-end="url(#arrowReturn)"/>
+  <text x="575" y="550" fill="#9aa8c7" font-size="9">exec, overview, files, discussion</text>
 
-  <line x1="365" y1="415" x2="640" y2="415" stroke="#5b8cff" stroke-width="1.5" marker-end="url(#arrowSeq)"/>
-  <text x="470" y="408" fill="#9aa8c7" font-size="10">Run all dimensions</text>
+  <line x1="548" y1="576" x2="307" y2="576" stroke="#06d6a0" stroke-width="1.5" marker-end="url(#arrowReturn)"/>
+  <text x="380" y="570" fill="#9aa8c7" font-size="9">AnalysisReport JSON</text>
 
-  <line x1="645" y1="435" x2="370" y2="435" stroke="#06d6a0" stroke-width="1.5" marker-end="url(#arrowReturn)"/>
-  <text x="470" y="428" fill="#9aa8c7" font-size="10">findings + risk score</text>
+  <line x1="302" y1="598" x2="781" y2="598" stroke="#5b8cff" stroke-width="1.5" marker-end="url(#arrowSeq)"/>
+  <text x="480" y="592" fill="#9aa8c7" font-size="9">upsert pr_reports (app/db/codelens.db)</text>
 
-  <line x1="365" y1="460" x2="770" y2="460" stroke="#5b8cff" stroke-width="1.5" marker-end="url(#arrowSeq)"/>
-  <text x="530" y="453" fill="#9aa8c7" font-size="10">Cache report</text>
+  <!-- OPTIONAL SIDE EFFECTS -->
+  <rect x="24" y="612" width="240" height="20" rx="4" fill="#1a2440" stroke="#ffd166"/>
+  <text x="144" y="626" text-anchor="middle" fill="#ffd166" font-size="10" font-weight="600">5 · OPTIONAL (production)</text>
 
-  <line x1="365" y1="490" x2="230" y2="490" stroke="#06d6a0" stroke-width="1.5" marker-end="url(#arrowReturn)"/>
-  <text x="265" y="483" fill="#9aa8c7" font-size="10">Analysis report JSON</text>
+  <line x1="302" y1="648" x2="417" y2="648" stroke="#ffd166" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrowOpt)"/>
+  <text x="310" y="642" fill="#9aa8c7" font-size="9">sync GitHub Check Run</text>
+  <line x1="302" y1="666" x2="417" y2="666" stroke="#ffd166" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrowOpt)"/>
+  <text x="310" y="660" fill="#9aa8c7" font-size="9">post PR summary comment</text>
 
-  <line x1="225" y1="515" x2="90" y2="515" stroke="#06d6a0" stroke-width="1.5" marker-end="url(#arrowReturn)"/>
-  <text x="115" y="508" fill="#9aa8c7" font-size="10">Risk, focus areas, breakdown</text>
+  <line x1="302" y1="692" x2="187" y2="692" stroke="#06d6a0" stroke-width="1.5" marker-end="url(#arrowReturn)"/>
+  <text x="210" y="686" fill="#9aa8c7" font-size="9">report JSON to UI</text>
+  <line x1="182" y1="710" x2="73" y2="710" stroke="#06d6a0" stroke-width="1.5" marker-end="url(#arrowReturn)"/>
+  <text x="88" y="704" fill="#9aa8c7" font-size="9">5 tabs: Overview · Changes · Commits · Discussion · Risk</text>
 
-  <!-- Output box -->
-  <rect x="30" y="545" width="900" height="55" rx="8" fill="#121a2f" stroke="#2a3654"/>
-  <text x="50" y="568" fill="#9aa8c7" font-size="11" font-weight="600">Report includes:</text>
-  <text x="50" y="588" fill="#eef2ff" font-size="11">Risk level (High/Medium/Low) · Executive summary · Top 5 focus areas · Dimension breakdown (volume, drift, security, tests, critical paths)</text>
+  <!-- REVIEW ACTIONS -->
+  <rect x="850" y="118" width="170" height="200" rx="10" fill="#121a2f" stroke="#2a3654"/>
+  <text x="935" y="142" text-anchor="middle" fill="#5b8cff" font-size="11" font-weight="600">Review actions</text>
+  <text x="865" y="168" fill="#9aa8c7" font-size="10">GET .../actions</text>
+  <text x="865" y="186" fill="#eef2ff" font-size="10">live mergeable state</text>
+  <text x="865" y="212" fill="#9aa8c7" font-size="10">POST .../approve</text>
+  <text x="865" y="230" fill="#eef2ff" font-size="10">GitHub APPROVE review</text>
+  <text x="865" y="248" fill="#9aa8c7" font-size="9">(blocked if own PR)</text>
+  <text x="865" y="274" fill="#9aa8c7" font-size="10">POST .../merge</text>
+  <text x="865" y="292" fill="#eef2ff" font-size="10">merge / squash / rebase</text>
+
+  <!-- Footer -->
+  <rect x="24" y="738" width="992" height="32" rx="8" fill="#121a2f" stroke="#2a3654"/>
+  <text x="40" y="758" fill="#eef2ff" font-size="10">Report: risk level · executive summary · PR overview · file walkthrough · commit diffs · discussion summary · dimension findings with evidence · AI/Rules badges</text>
 </svg>

@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: codelens-backend
+  namespace: codelens
+  labels:
+    app.kubernetes.io/name: codelens
+    app.kubernetes.io/component: backend
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: codelens
+    app.kubernetes.io/component: backend
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http
