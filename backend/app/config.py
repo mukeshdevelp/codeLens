@@ -4,6 +4,8 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+_BACKEND_DIR = Path(__file__).resolve().parent.parent
+_REPO_ROOT = _BACKEND_DIR.parent
 _DEFAULT_DB_FILE = Path(__file__).resolve().parent / "db" / "codelens.db"
 
 
@@ -11,7 +13,10 @@ class Settings(BaseSettings):
     """Environment-backed configuration for GitHub, AI, database, and feature flags."""
 
     model_config = SettingsConfigDict(
-        env_file=("../.env", ".env"),
+        env_file=(
+            str(_REPO_ROOT / ".env"),
+            str(_BACKEND_DIR / ".env"),
+        ),
         env_file_encoding="utf-8",
         extra="ignore",
     )
@@ -71,6 +76,11 @@ class Settings(BaseSettings):
     def embed_configured(self) -> bool:
         """True when signed embed tokens can be issued for github.com iframe/details links."""
         return bool(self.embed_shared_secret)
+
+    @property
+    def use_secure_cookies(self) -> bool:
+        """Use Secure cookies when the app is served over HTTPS (like ngrok)."""
+        return self.frontend_url.startswith("https://")
 
 
 settings = Settings()

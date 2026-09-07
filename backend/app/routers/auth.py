@@ -33,7 +33,7 @@ def set_session_cookie(response: Response, token: str) -> None:
         value=token,
         httponly=True,
         samesite="lax",
-        secure=False,
+        secure=settings.use_secure_cookies,
         path="/",
         max_age=60 * 60 * 24 * 7,
     )
@@ -62,6 +62,8 @@ async def get_current_user(request: Request, db: Annotated[AsyncSession, Depends
 
 @router.get("/github")
 async def login_github():
+    if not settings.github_client_id or not settings.github_client_secret:
+        return auth_error_redirect("auth_failed")
     state = secrets.token_urlsafe(16)
     redirect = RedirectResponse(github_oauth_url(state))
     redirect.set_cookie(
@@ -69,7 +71,7 @@ async def login_github():
         state,
         httponly=True,
         samesite="lax",
-        secure=False,
+        secure=settings.use_secure_cookies,
         path="/",
         max_age=600,
     )
@@ -116,8 +118,27 @@ async def github_callback(
 
     redirect = RedirectResponse(f"{settings.frontend_url}/dashboard")
     set_session_cookie(redirect, create_session_token(user.id))
-    redirect.delete_cookie("oauth_state")
+    redirect.delete_cookie(
+        "oauth_state",
+        path="/",
+        secure=settings.use_secure_cookies,
+        samesite="lax",
+    )
     return redirect
+
+
+@router.get("/oauth-config")
+async def oauth_config():
+    """Return the redirect URI this server sends to GitHub (for OAuth App setup)."""
+    return {
+        "redirectUri": settings.github_redirect_uri,
+        "frontendUrl": settings.frontend_url,
+        "githubOAuthAppSettings": "https://github.com/settings/developers",
+        "setupHint": (
+            "In your GitHub OAuth App, set Authorization callback URL to exactly "
+            f"{settings.github_redirect_uri}"
+        ),
+    }
 
 
 @router.get("/me")
@@ -132,5 +153,10 @@ async def me(user: Annotated[User, Depends(get_current_user)]):
 
 @router.post("/logout")
 async def logout(response: Response):
-    response.delete_cookie("codelens_session")
+    response.delete_cookie(
+        "codelens_session",
+        path="/",
+        secure=settings.use_secure_cookies,
+        samesite="lax",
+    )
     return {"ok": True}

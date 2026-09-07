@@ -8,8 +8,11 @@ CodeLens is a GitHub-based tool that analyzes pull requests and gives reviewers 
 
 ## Table of contents
 
+- [Architecture](docs/architecture.md)
+- [Implementation status](docs/implemented.md)
+- [Request flows](docs/request-flow.md)
 - [Product Requirements Document](#product-requirements-document)
-- [Implementation status](#implementation-status)
+- [Implementation status (summary)](#implementation-status)
 - [Problem](#problem)
 - [Architecture](#architecture)
 - [Tech stack](#tech-stack)
@@ -155,9 +158,9 @@ Legend: ✅ Implemented · ⚠️ Partial · ❌ Not implemented
 | Re-analyze on demand | ✅ | `POST .../analyze` | `PrReport.jsx` → Re-analyze button |
 | PR diff in review workflow | ✅ | patches in analyze response | `components/DiffViewer.jsx`, `FileWalkthrough.jsx` |
 | Review discussion context | ⚠️ | `services/discussion.py` | `components/ReviewDiscussion.jsx` |
-| GitHub App / PR comment bot | ❌ | — | — |
-| Auto-analyze on webhook | ❌ | — | — |
-| Lives inside GitHub.com UI | ❌ | — | Standalone web app at `:5173` |
+| GitHub App / PR comment bot | ✅ | `services/pr_comments.py`, `routers/github_integration.py` | Post summary button; `ENABLE_GITHUB_PR_COMMENTS` |
+| Auto-analyze on webhook | ✅ | `routers/webhooks.py` → `run_pr_analysis()` | Requires GitHub App + `GITHUB_WEBHOOK_SECRET` |
+| Lives inside GitHub.com UI | ⚠️ | `services/embed_tokens.py`, Checks `details_url` | Standalone app + embed iframe on Checks |
 
 ### PRD expected outcome & success criteria
 
@@ -205,7 +208,7 @@ Legend: ✅ Implemented · ⚠️ Partial · ❌ Not implemented
 | Area | Coverage |
 |------|----------|
 | Core PR analysis dimensions (PRD §4) | **6 / 7** (code quality not yet implemented) |
-| GitHub workflow prototype (PRD §5–6) | **~85%** (web app, not GitHub-native) |
+| GitHub workflow prototype (PRD §5–6) | **~95%** (web app + webhooks + checks; embed on github.com) |
 | CodeRabbit-inspired UX (PRD §11) | **~85%** (walkthrough, commits, diffs, discussion; AI needs provider key) |
 | Non-goals respected (PRD §7) | **100%** |
 
@@ -223,9 +226,13 @@ Code reviews get harder as PRs grow. Reviewers often spend time figuring out sco
 
 ### System architecture
 
+See **[docs/architecture.md](docs/architecture.md)** for full system design.
+
 ![CodeLens system architecture](docs/architecture.svg)
 
 ### PR analysis request flow
+
+See **[docs/request-flow.md](docs/request-flow.md)** for step-by-step flows (OAuth, analyze, webhook, checks).
 
 ![PR analysis sequence flow](docs/analyze-flow.svg)
 
@@ -324,8 +331,12 @@ codeLens/
 ├── fixtures/
 │   └── demo-pr.json             # Sample risky PR for demo
 ├── docs/
-│   ├── architecture.svg         # System architecture diagram
-│   └── analyze-flow.svg         # PR analysis sequence diagram
+│   ├── architecture.md          # System design (this doc's companion)
+│   ├── architecture.svg         # Architecture diagram
+│   ├── implemented.md           # Full feature checklist
+│   ├── request-flow.md          # Step-by-step request flows
+│   ├── analyze-flow.svg         # Sequence diagram
+│   └── PRODUCTION_GITHUB.md     # GitHub App production setup
 ├── scripts/
 │   ├── dev-backend.sh
 │   └── demo-analyze.py
@@ -414,8 +425,6 @@ The Vite dev server proxies `/auth` and `/api` to the backend.
 | `AI_API_KEY` | No | API key for chosen provider (falls back to `OPENAI_API_KEY`) |
 | `AI_MODEL` | No | Model name (provider-specific default if unset) |
 | `AI_BASE_URL` | No | Optional custom API base URL |
-| `CURSOR_API_KEY` | No | Slow fallback for executive summary only |
-| `CURSOR_MODEL` | No | Default: `composer-2.5` |
 | `OPENAI_API_KEY` | No | OpenAI key (used when `AI_PROVIDER=openai`) |
 | `OPENAI_MODEL` | No | Default: `gpt-4o-mini` |
 | `GROQ_API_KEY` | No | Groq key (auto-used when `AI_PROVIDER=groq`) |

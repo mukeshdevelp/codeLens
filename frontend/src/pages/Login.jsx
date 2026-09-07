@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { loginUrl } from "../api/client";
 import { useAuth } from "../context/AuthContext";
@@ -12,6 +13,14 @@ export default function Login() {
   const { user, loading } = useAuth();
   const [searchParams] = useSearchParams();
   const authError = AUTH_ERRORS[searchParams.get("error")] || null;
+  const [oauthSetup, setOauthSetup] = useState(null);
+
+  useEffect(() => {
+    fetch("/auth/oauth-config", { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => setOauthSetup(data))
+      .catch(() => {});
+  }, []);
 
   if (loading) return <div className="page-center"><div className="spinner" /></div>;
   if (user) return <Navigate to="/dashboard" replace />;
@@ -34,6 +43,13 @@ export default function Login() {
         </ul>
         <a href={loginUrl()} className="btn github">Continue with GitHub</a>
         <p className="login-note">We request read access to your repositories to analyze pull requests.</p>
+        {oauthSetup && (
+          <p className="login-note login-oauth-setup">
+            
+            {" "}
+            
+          </p>
+        )}
       </div>
     </div>
   );

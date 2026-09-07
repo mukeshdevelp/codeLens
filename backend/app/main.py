@@ -23,6 +23,7 @@ if settings.embed_allowed_frame_ancestors:
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_origins,
+    allow_origin_regex=r"https://.*\.trycloudflare\.com|https://.*\.loca\.lt",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -51,6 +52,12 @@ app.include_router(github_integration.router)
 @app.on_event("startup")
 async def startup() -> None:
     await init_db()
+    if settings.github_client_id:
+        print(
+            "GitHub OAuth: set Authorization callback URL to",
+            settings.github_redirect_uri,
+            "→ https://github.com/settings/developers",
+        )
 
 
 @app.get("/health")

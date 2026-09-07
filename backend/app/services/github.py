@@ -300,14 +300,15 @@ def can_user_approve_pr(pr: dict[str, Any], login: str, reviews: list[dict[str, 
 
 def github_oauth_url(state: str) -> str:
     """Build the GitHub OAuth authorize URL with CSRF ``state`` and repo scope."""
-    scopes = "read:user repo"
-    return (
-        "https://github.com/login/oauth/authorize"
-        f"?client_id={settings.github_client_id}"
-        f"&redirect_uri={settings.github_redirect_uri}"
-        f"&scope={scopes.replace(' ', '%20')}"
-        f"&state={state}"
-    )
+    from urllib.parse import urlencode
+
+    params = {
+        "client_id": settings.github_client_id,
+        "redirect_uri": settings.github_redirect_uri,
+        "scope": "read:user repo",
+        "state": state,
+    }
+    return f"https://github.com/login/oauth/authorize?{urlencode(params)}"
 
 
 async def exchange_code_for_token(code: str) -> str:
