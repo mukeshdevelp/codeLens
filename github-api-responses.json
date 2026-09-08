@@ -1,0 +1,814 @@
+{
+  "_meta": {
+    "project": "CodeLens",
+    "description": "Example JSON responses from every GitHub HTTP request CodeLens makes. Shapes follow GitHub REST API v3 (2022-11-28). Ellipsis (...) means additional GitHub fields may be present but are unused.",
+    "sourceFiles": [
+      "backend/app/services/github.py",
+      "backend/app/services/github_app.py",
+      "backend/app/routers/auth.py",
+      "backend/app/routers/webhooks.py"
+    ],
+    "note": "OAuth authorize is a browser redirect (no JSON body). Webhook POST bodies are sent by GitHub to CodeLens, not fetched by CodeLens."
+  },
+  "requests": {
+    "oauth_access_token_exchange": {
+      "direction": "CodeLens → GitHub",
+      "method": "POST",
+      "url": "https://github.com/login/oauth/access_token",
+      "headers": { "Accept": "application/json" },
+      "requestBody": {
+        "client_id": "Ov23li...",
+        "client_secret": "***",
+        "code": "authorization_code_from_callback",
+        "redirect_uri": "http://localhost:5173/auth/github/callback"
+      },
+      "usedIn": "backend/app/services/github.py :: exchange_code_for_token()",
+      "fieldsUsed": ["access_token", "error", "error_description"],
+      "exampleResponse": {
+        "access_token": "gho_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "token_type": "bearer",
+        "scope": "read:user,repo"
+      },
+      "exampleErrorResponse": {
+        "error": "bad_verification_code",
+        "error_description": "The code passed is incorrect or expired."
+      }
+    },
+    "get_authenticated_user": {
+      "direction": "CodeLens → GitHub",
+      "method": "GET",
+      "url": "https://api.github.com/user",
+      "auth": "Bearer {user_oauth_token}",
+      "usedIn": "backend/app/routers/auth.py :: github_callback()",
+      "fieldsUsed": ["id", "login", "name", "avatar_url"],
+      "exampleResponse": {
+        "login": "octocat",
+        "id": 1,
+        "node_id": "MDQ6VXNlcjE=",
+        "avatar_url": "https://avatars.githubusercontent.com/u/1?v=4",
+        "name": "The Octocat",
+        "email": null,
+        "type": "User",
+        "site_admin": false
+      }
+    },
+    "list_user_repositories": {
+      "direction": "CodeLens → GitHub",
+      "method": "GET",
+      "url": "https://api.github.com/user/repos?sort=updated&per_page=30&page=1&affiliation=owner,collaborator,organization_member",
+      "auth": "Bearer {user_oauth_token}",
+      "usedIn": "backend/app/routers/api.py :: list_repos()",
+      "fieldsUsed": ["id", "name", "full_name", "owner.login", "private", "description", "updated_at", "open_issues_count", "default_branch", "html_url"],
+      "responseType": "array",
+      "exampleResponse": [
+        {
+          "id": 1296269,
+          "node_id": "MDEwOlJlcG9zaXRvcnkxMjk2MjY5",
+          "name": "Hello-World",
+          "full_name": "octocat/Hello-World",
+          "private": false,
+          "owner": {
+            "login": "octocat",
+            "id": 1,
+            "type": "User"
+          },
+          "html_url": "https://github.com/octocat/Hello-World",
+          "description": "My first repository on GitHub!",
+          "fork": false,
+          "created_at": "2011-01-26T19:01:12Z",
+          "updated_at": "2024-06-10T12:00:00Z",
+          "pushed_at": "2024-06-09T18:00:00Z",
+          "default_branch": "main",
+          "open_issues_count": 3
+        }
+      ]
+    },
+    "list_pull_requests": {
+      "direction": "CodeLens → GitHub",
+      "method": "GET",
+      "url": "https://api.github.com/repos/{owner}/{repo}/pulls?state=open&per_page=30&sort=updated",
+      "auth": "Bearer {user_oauth_token}",
+      "usedIn": "backend/app/routers/api.py :: list_pulls()",
+      "fieldsUsed": ["number", "title", "state", "user.login", "created_at", "updated_at", "html_url", "additions", "deletions", "changed_files"],
+      "responseType": "array",
+      "exampleResponse": [
+        {
+          "url": "https://api.github.com/repos/octocat/Hello-World/pulls/1347",
+          "id": 1,
+          "node_id": "PR_kwDOA...",
+          "number": 1347,
+          "state": "open",
+          "title": "Fix login redirect bug",
+          "user": {
+            "login": "octocat",
+            "id": 1
+          },
+          "body": "Fixes OAuth redirect after login.",
+          "created_at": "2024-06-01T10:00:00Z",
+          "updated_at": "2024-06-02T14:30:00Z",
+          "html_url": "https://github.com/octocat/Hello-World/pull/1347",
+          "additions": 45,
+          "deletions": 12,
+          "changed_files": 4
+        }
+      ]
+    },
+    "get_pull_request": {
+      "direction": "CodeLens → GitHub",
+      "method": "GET",
+      "url": "https://api.github.com/repos/{owner}/{repo}/pulls/{number}",
+      "auth": "Bearer {user_oauth_token | installation_token}",
+      "usedIn": [
+        "backend/app/services/analyze_pipeline.py :: run_pr_analysis()",
+        "backend/app/routers/api.py :: pr_actions()"
+      ],
+      "fieldsUsed": [
+        "title",
+        "body",
+        "state",
+        "merged",
+        "mergeable",
+        "mergeable_state",
+        "user.login",
+        "additions",
+        "deletions",
+        "changed_files",
+        "html_url",
+        "base.sha",
+        "base.ref",
+        "head.sha"
+      ],
+      "exampleResponse": {
+        "url": "https://api.github.com/repos/octocat/Hello-World/pulls/1347",
+        "id": 1,
+        "number": 1347,
+        "state": "open",
+        "merged": false,
+        "mergeable": true,
+        "mergeable_state": "clean",
+        "title": "Fix login redirect bug",
+        "body": "Fixes OAuth redirect after login.",
+        "user": {
+          "login": "octocat",
+          "id": 1
+        },
+        "html_url": "https://github.com/octocat/Hello-World/pull/1347",
+        "additions": 45,
+        "deletions": 12,
+        "changed_files": 4,
+        "base": {
+          "label": "octocat:main",
+          "ref": "main",
+          "sha": "abc123base0000000000000000000000000000",
+          "repo": {
+            "name": "Hello-World",
+            "full_name": "octocat/Hello-World"
+          }
+        },
+        "head": {
+          "label": "octocat:feature/login-fix",
+          "ref": "feature/login-fix",
+          "sha": "def456head0000000000000000000000000000",
+          "repo": {
+            "name": "Hello-World",
+            "full_name": "octocat/Hello-World"
+          }
+        }
+      }
+    },
+    "list_pull_request_files": {
+      "direction": "CodeLens → GitHub",
+      "method": "GET",
+      "url": "https://api.github.com/repos/{owner}/{repo}/pulls/{number}/files?per_page=100",
+      "auth": "Bearer {token}",
+      "usedIn": "backend/app/services/github.py :: list_pr_files()",
+      "fieldsUsed": ["filename", "status", "additions", "deletions", "patch"],
+      "responseType": "array (paginated)",
+      "exampleResponse": [
+        {
+          "sha": "bbcd538c8e72b8c175026e",
+          "filename": "src/auth/login.ts",
+          "status": "modified",
+          "additions": 15,
+          "deletions": 3,
+          "changes": 18,
+          "blob_url": "https://api.github.com/repos/octocat/Hello-World/git/blobs/bbcd538...",
+          "raw_url": "https://github.com/octocat/Hello-World/raw/.../src/auth/login.ts",
+          "contents_url": "https://api.github.com/repos/octocat/Hello-World/contents/src/auth/login.ts?ref=def456...",
+          "patch": "@@ -10,6 +10,9 @@\n export async function login(credentials) {\n+  const token = process.env.JWT_SECRET;\n   const user = await validateUser(credentials);\n   return createSession(user);\n }"
+        },
+        {
+          "filename": "src/payments/billing.ts",
+          "status": "added",
+          "additions": 67,
+          "deletions": 0,
+          "changes": 67,
+          "patch": "@@ -0,0 +1,10 @@\n+export async function updateSubscription() { ... }"
+        }
+      ]
+    },
+    "list_pull_request_commits": {
+      "direction": "CodeLens → GitHub",
+      "method": "GET",
+      "url": "https://api.github.com/repos/{owner}/{repo}/pulls/{number}/commits?per_page=100",
+      "auth": "Bearer {token}",
+      "usedIn": "backend/app/services/commits.py :: fetch_pr_commits_detailed()",
+      "fieldsUsed": ["sha"],
+      "responseType": "array (paginated)",
+      "exampleResponse": [
+        {
+          "sha": "6dcb09b5b57875f334f61aebed695e2e4192db0",
+          "commit": {
+            "message": "Fix login redirect",
+            "author": {
+              "name": "The Octocat",
+              "email": "octocat@github.com",
+              "date": "2024-06-02T12:00:00Z"
+            }
+          },
+          "author": {
+            "login": "octocat",
+            "id": 1
+          },
+          "html_url": "https://github.com/octocat/Hello-World/commit/6dcb09b5..."
+        }
+      ]
+    },
+    "get_commit": {
+      "direction": "CodeLens → GitHub",
+      "method": "GET",
+      "url": "https://api.github.com/repos/{owner}/{repo}/commits/{sha}",
+      "auth": "Bearer {token}",
+      "usedIn": "backend/app/services/commits.py :: fetch_pr_commits_detailed()",
+      "fieldsUsed": ["sha", "commit.message", "commit.author", "author.login", "html_url", "stats", "files", "parents"],
+      "exampleResponse": {
+        "sha": "6dcb09b5b57875f334f61aebed695e2e4192db0",
+        "commit": {
+          "message": "Fix login redirect\n\nAlso updates session handling.",
+          "author": {
+            "name": "The Octocat",
+            "email": "octocat@github.com",
+            "date": "2024-06-02T12:00:00Z"
+          }
+        },
+        "author": {
+          "login": "octocat",
+          "id": 1
+        },
+        "html_url": "https://github.com/octocat/Hello-World/commit/6dcb09b5...",
+        "stats": {
+          "additions": 45,
+          "deletions": 12,
+          "total": 57
+        },
+        "files": [
+          {
+            "filename": "src/auth/login.ts",
+            "status": "modified",
+            "additions": 15,
+            "deletions": 3,
+            "patch": "@@ -10,6 +10,9 @@\n ..."
+          }
+        ],
+        "parents": [
+          {
+            "sha": "abc123parent0000000000000000000000000",
+            "url": "https://api.github.com/repos/octocat/Hello-World/commits/abc123..."
+          }
+        ]
+      }
+    },
+    "compare_commits": {
+      "direction": "CodeLens → GitHub",
+      "method": "GET",
+      "url": "https://api.github.com/repos/{owner}/{repo}/compare/{base}...{head}",
+      "auth": "Bearer {token}",
+      "usedIn": [
+        "backend/app/services/commits.py :: _fill_missing_patches()",
+        "backend/app/services/commits.py :: enrich_pr_file_patches()"
+      ],
+      "fieldsUsed": ["files[].filename", "files[].patch"],
+      "exampleResponse": {
+        "url": "https://api.github.com/repos/octocat/Hello-World/compare/main...feature/login-fix",
+        "html_url": "https://github.com/octocat/Hello-World/compare/main...feature/login-fix",
+        "permalink_url": "https://github.com/octocat/Hello-World/compare/octocat:abc123...octocat:def456",
+        "diff_url": "https://github.com/octocat/Hello-World/compare/main...feature/login-fix.diff",
+        "patch_url": "https://github.com/octocat/Hello-World/compare/main...feature/login-fix.patch",
+        "base_commit": {
+          "sha": "abc123base0000000000000000000000000000"
+        },
+        "merge_base_commit": {
+          "sha": "abc123base0000000000000000000000000000"
+        },
+        "status": "ahead",
+        "ahead_by": 2,
+        "behind_by": 0,
+        "total_commits": 2,
+        "files": [
+          {
+            "sha": "bbcd538c8e72b8c175026e",
+            "filename": "src/auth/login.ts",
+            "status": "modified",
+            "additions": 15,
+            "deletions": 3,
+            "changes": 18,
+            "patch": "@@ -10,6 +10,9 @@\n ..."
+          }
+        ]
+      }
+    },
+    "get_repository_content": {
+      "direction": "CodeLens → GitHub",
+      "method": "GET",
+      "url": "https://api.github.com/repos/{owner}/{repo}/contents/{path}?ref={sha}",
+      "auth": "Bearer {token}",
+      "usedIn": "backend/app/services/github.py :: get_file_text()",
+      "fieldsUsed": ["content (base64)", "type"],
+      "notes": "Returns 404 if file missing; CodeLens decodes content from base64.",
+      "exampleResponse": {
+        "name": "login.ts",
+        "path": "src/auth/login.ts",
+        "sha": "bbcd538c8e72b8c175026e",
+        "size": 1234,
+        "url": "https://api.github.com/repos/octocat/Hello-World/contents/src/auth/login.ts?ref=def456...",
+        "html_url": "https://github.com/octocat/Hello-World/blob/def456.../src/auth/login.ts",
+        "git_url": "https://api.github.com/repos/octocat/Hello-World/git/blobs/bbcd538...",
+        "download_url": "https://raw.githubusercontent.com/octocat/Hello-World/def456.../src/auth/login.ts",
+        "type": "file",
+        "content": "ZXhwb3J0IGFzeW5jIGZ1bmN0aW9uIGxvZ2luKCkgeyAuLi4gfQ==",
+        "encoding": "base64"
+      }
+    },
+    "get_repository": {
+      "direction": "CodeLens → GitHub",
+      "method": "GET",
+      "url": "https://api.github.com/repos/{owner}/{repo}",
+      "auth": "Bearer {user_oauth_token}",
+      "usedIn": "backend/app/routers/api.py :: pr_actions()",
+      "fieldsUsed": ["default_branch"],
+      "exampleResponse": {
+        "id": 1296269,
+        "name": "Hello-World",
+        "full_name": "octocat/Hello-World",
+        "private": false,
+        "owner": {
+          "login": "octocat",
+          "id": 1
+        },
+        "html_url": "https://github.com/octocat/Hello-World",
+        "description": "My first repository on GitHub!",
+        "default_branch": "main"
+      }
+    },
+    "list_pull_request_reviews": {
+      "direction": "CodeLens → GitHub",
+      "method": "GET",
+      "url": "https://api.github.com/repos/{owner}/{repo}/pulls/{number}/reviews",
+      "auth": "Bearer {token}",
+      "usedIn": [
+        "backend/app/services/discussion.py",
+        "backend/app/routers/api.py :: pr_actions()"
+      ],
+      "fieldsUsed": ["body", "user.login", "state", "submitted_at", "created_at"],
+      "responseType": "array",
+      "exampleResponse": [
+        {
+          "id": 80,
+          "node_id": "PRR_kwDOA...",
+          "user": {
+            "login": "hubot",
+            "id": 2
+          },
+          "body": "Looks good to me!",
+          "state": "APPROVED",
+          "commit_id": "6dcb09b5b57875f334f61aebed695e2e4192db0",
+          "submitted_at": "2024-06-02T15:00:00Z",
+          "html_url": "https://github.com/octocat/Hello-World/pull/1347#pullrequestreview-80"
+        }
+      ]
+    },
+    "list_pull_request_review_comments": {
+      "direction": "CodeLens → GitHub",
+      "method": "GET",
+      "url": "https://api.github.com/repos/{owner}/{repo}/pulls/{number}/comments?per_page=100",
+      "auth": "Bearer {token}",
+      "usedIn": "backend/app/services/discussion.py",
+      "fieldsUsed": ["user.login", "body", "path", "line", "original_line", "created_at"],
+      "responseType": "array",
+      "exampleResponse": [
+        {
+          "url": "https://api.github.com/repos/octocat/Hello-World/pulls/comments/1",
+          "id": 1,
+          "path": "src/auth/login.ts",
+          "line": 42,
+          "original_line": 42,
+          "body": "Consider validating credentials before creating session.",
+          "user": {
+            "login": "hubot",
+            "id": 2
+          },
+          "created_at": "2024-06-02T14:00:00Z",
+          "updated_at": "2024-06-02T14:00:00Z",
+          "html_url": "https://github.com/octocat/Hello-World/pull/1347#discussion_r1"
+        }
+      ]
+    },
+    "list_issue_comments": {
+      "direction": "CodeLens → GitHub",
+      "method": "GET",
+      "url": "https://api.github.com/repos/{owner}/{repo}/issues/{number}/comments?per_page=100",
+      "auth": "Bearer {token}",
+      "usedIn": "backend/app/services/discussion.py",
+      "notes": "PRs are issues in GitHub's API; issue_number equals PR number.",
+      "fieldsUsed": ["user.login", "body", "created_at"],
+      "responseType": "array",
+      "exampleResponse": [
+        {
+          "url": "https://api.github.com/repos/octocat/Hello-World/issues/comments/1",
+          "id": 1,
+          "body": "Can you add a test for the redirect case?",
+          "user": {
+            "login": "hubot",
+            "id": 2
+          },
+          "created_at": "2024-06-02T13:00:00Z",
+          "updated_at": "2024-06-02T13:00:00Z",
+          "html_url": "https://github.com/octocat/Hello-World/issues/1347#issuecomment-1"
+        }
+      ]
+    },
+    "create_pull_request_review_approve": {
+      "direction": "CodeLens → GitHub",
+      "method": "POST",
+      "url": "https://api.github.com/repos/{owner}/{repo}/pulls/{number}/reviews",
+      "auth": "Bearer {user_oauth_token}",
+      "requestBody": {
+        "event": "APPROVE",
+        "body": "Approved via CodeLens after review."
+      },
+      "usedIn": "backend/app/routers/api.py :: approve_pr()",
+      "exampleResponse": {
+        "id": 80,
+        "user": {
+          "login": "octocat",
+          "id": 1
+        },
+        "body": "Approved via CodeLens after review.",
+        "state": "APPROVED",
+        "commit_id": "def456head0000000000000000000000000000",
+        "submitted_at": "2024-06-03T10:00:00Z",
+        "html_url": "https://github.com/octocat/Hello-World/pull/1347#pullrequestreview-80"
+      }
+    },
+    "merge_pull_request": {
+      "direction": "CodeLens → GitHub",
+      "method": "PUT",
+      "url": "https://api.github.com/repos/{owner}/{repo}/pulls/{number}/merge",
+      "auth": "Bearer {user_oauth_token}",
+      "requestBody": {
+        "merge_method": "merge",
+        "commit_title": "Optional custom merge title"
+      },
+      "usedIn": "backend/app/routers/api.py :: merge_pr()",
+      "exampleResponse": {
+        "sha": "merged_commit_sha0000000000000000000000",
+        "merged": true,
+        "message": "Pull Request successfully merged"
+      },
+      "exampleErrorResponse": {
+        "message": "Pull Request is not mergeable",
+        "documentation_url": "https://docs.github.com/rest/pulls/pulls#merge-a-pull-request"
+      }
+    },
+    "create_check_run": {
+      "direction": "CodeLens → GitHub",
+      "method": "POST",
+      "url": "https://api.github.com/repos/{owner}/{repo}/check-runs",
+      "auth": "Bearer {installation_token}",
+      "requestBody": {
+        "name": "CodeLens",
+        "head_sha": "def456head0000000000000000000000000000",
+        "status": "completed",
+        "conclusion": "failure",
+        "details_url": "https://app.example.com/embed/repos/octocat/Hello-World/pulls/1347?token=...",
+        "output": {
+          "title": "CodeLens HIGH risk (61/100)",
+          "summary": "High-risk PR with security and test coverage concerns.",
+          "text": "### Focus areas\n- src/auth/login.ts: Possible secret\n- src/payments/billing.ts: SQL injection pattern"
+        }
+      },
+      "usedIn": "backend/app/services/checks.py :: upsert_check_run()",
+      "fieldsUsed": ["id"],
+      "exampleResponse": {
+        "id": 128620228,
+        "name": "CodeLens",
+        "head_sha": "def456head0000000000000000000000000000",
+        "status": "completed",
+        "conclusion": "failure",
+        "details_url": "https://app.example.com/embed/repos/octocat/Hello-World/pulls/1347?token=...",
+        "output": {
+          "title": "CodeLens HIGH risk (61/100)",
+          "summary": "High-risk PR with security and test coverage concerns.",
+          "text": "### Focus areas\n- src/auth/login.ts: Possible secret"
+        },
+        "check_suite": {
+          "id": 1
+        },
+        "app": {
+          "id": 12345,
+          "slug": "codelens",
+          "name": "CodeLens"
+        },
+        "pull_requests": [
+          {
+            "number": 1347,
+            "head": {
+              "ref": "feature/login-fix",
+              "sha": "def456head0000000000000000000000000000"
+            }
+          }
+        ]
+      }
+    },
+    "update_check_run": {
+      "direction": "CodeLens → GitHub",
+      "method": "PATCH",
+      "url": "https://api.github.com/repos/{owner}/{repo}/check-runs/{check_run_id}",
+      "auth": "Bearer {installation_token}",
+      "requestBody": {
+        "name": "CodeLens",
+        "head_sha": "def456head0000000000000000000000000000",
+        "status": "completed",
+        "conclusion": "neutral",
+        "details_url": "https://app.example.com/embed/...",
+        "output": {
+          "title": "CodeLens MEDIUM risk (42/100)",
+          "summary": "Medium-risk PR.",
+          "text": "### Focus areas\n- ..."
+        }
+      },
+      "usedIn": "backend/app/services/checks.py :: upsert_check_run()",
+      "exampleResponse": {
+        "id": 128620228,
+        "name": "CodeLens",
+        "status": "completed",
+        "conclusion": "neutral",
+        "output": {
+          "title": "CodeLens MEDIUM risk (42/100)",
+          "summary": "Medium-risk PR."
+        }
+      }
+    },
+    "create_issue_comment": {
+      "direction": "CodeLens → GitHub",
+      "method": "POST",
+      "url": "https://api.github.com/repos/{owner}/{repo}/issues/{issue_number}/comments",
+      "auth": "Bearer {user_oauth_token | installation_token}",
+      "requestBody": {
+        "body": "## CodeLens PR Summary\n\n**Risk:** HIGH (61/100)\n\n..."
+      },
+      "usedIn": "backend/app/services/pr_comments.py :: post_pr_summary_comment()",
+      "exampleResponse": {
+        "url": "https://api.github.com/repos/octocat/Hello-World/issues/comments/2",
+        "id": 2,
+        "body": "## CodeLens PR Summary\n\n**Risk:** HIGH (61/100)",
+        "user": {
+          "login": "codelens[bot]",
+          "id": 99,
+          "type": "Bot"
+        },
+        "created_at": "2024-06-03T11:00:00Z",
+        "updated_at": "2024-06-03T11:00:00Z",
+        "html_url": "https://github.com/octocat/Hello-World/issues/1347#issuecomment-2"
+      }
+    },
+    "get_github_app": {
+      "direction": "CodeLens → GitHub",
+      "method": "GET",
+      "url": "https://api.github.com/app",
+      "auth": "Bearer {app_jwt}",
+      "usedIn": [
+        "backend/app/services/github_app.py :: get_app_info()",
+        "backend/app/routers/github_integration.py :: github_integration_status()"
+      ],
+      "fieldsUsed": ["name", "id", "slug"],
+      "exampleResponse": {
+        "id": 12345,
+        "slug": "codelens",
+        "name": "CodeLens",
+        "description": "PR review intelligence",
+        "external_url": "https://app.example.com",
+        "html_url": "https://github.com/apps/codelens",
+        "owner": {
+          "login": "octocat",
+          "id": 1,
+          "type": "User"
+        }
+      }
+    },
+    "create_installation_access_token": {
+      "direction": "CodeLens → GitHub",
+      "method": "POST",
+      "url": "https://api.github.com/app/installations/{installation_id}/access_tokens",
+      "auth": "Bearer {app_jwt}",
+      "usedIn": "backend/app/services/github_app.py :: get_installation_access_token()",
+      "fieldsUsed": ["token", "expires_at"],
+      "exampleResponse": {
+        "token": "ghs_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "expires_at": "2024-06-03T12:00:00Z",
+        "permissions": {
+          "contents": "read",
+          "pull_requests": "write",
+          "checks": "write",
+          "metadata": "read"
+        },
+        "repository_selection": "selected",
+        "repositories": [
+          {
+            "id": 1296269,
+            "name": "Hello-World",
+            "full_name": "octocat/Hello-World",
+            "private": false
+          }
+        ]
+      }
+    }
+  },
+  "incoming_webhooks": {
+    "_note": "GitHub POSTs these JSON bodies to CodeLens at POST /webhooks/github (not outbound API calls).",
+    "pull_request_opened": {
+      "headers": {
+        "X-GitHub-Event": "pull_request",
+        "X-GitHub-Delivery": "uuid-delivery-id",
+        "X-Hub-Signature-256": "sha256=..."
+      },
+      "usedIn": "backend/app/routers/webhooks.py",
+      "fieldsUsed": [
+        "action",
+        "pull_request.number",
+        "installation.id",
+        "repository.full_name",
+        "repository.owner.login",
+        "repository.name"
+      ],
+      "examplePayload": {
+        "action": "opened",
+        "number": 1347,
+        "pull_request": {
+          "url": "https://api.github.com/repos/octocat/Hello-World/pulls/1347",
+          "id": 1,
+          "number": 1347,
+          "state": "open",
+          "title": "Fix login redirect bug",
+          "user": {
+            "login": "octocat",
+            "id": 1
+          },
+          "body": "Fixes OAuth redirect.",
+          "head": {
+            "ref": "feature/login-fix",
+            "sha": "def456head0000000000000000000000000000"
+          },
+          "base": {
+            "ref": "main",
+            "sha": "abc123base0000000000000000000000000000"
+          },
+          "html_url": "https://github.com/octocat/Hello-World/pull/1347"
+        },
+        "repository": {
+          "id": 1296269,
+          "name": "Hello-World",
+          "full_name": "octocat/Hello-World",
+          "private": false,
+          "owner": {
+            "login": "octocat",
+            "id": 1,
+            "type": "User"
+          },
+          "html_url": "https://github.com/octocat/Hello-World"
+        },
+        "installation": {
+          "id": 12345678,
+          "node_id": "MDIzOkluc3RhbGxhdGlvbjEyMzQ1Njc4"
+        },
+        "sender": {
+          "login": "octocat",
+          "id": 1
+        }
+      }
+    },
+    "pull_request_synchronize": {
+      "headers": {
+        "X-GitHub-Event": "pull_request"
+      },
+      "notes": "Same shape as pull_request_opened; action is synchronize when new commits are pushed.",
+      "examplePayload": {
+        "action": "synchronize",
+        "number": 1347,
+        "pull_request": {
+          "number": 1347,
+          "head": {
+            "sha": "new_head_sha000000000000000000000000"
+          }
+        },
+        "repository": {
+          "full_name": "octocat/Hello-World",
+          "name": "Hello-World",
+          "owner": {
+            "login": "octocat"
+          }
+        },
+        "installation": {
+          "id": 12345678
+        }
+      }
+    },
+    "installation_created": {
+      "headers": {
+        "X-GitHub-Event": "installation"
+      },
+      "usedIn": "backend/app/routers/webhooks.py :: installation handler",
+      "fieldsUsed": [
+        "action",
+        "installation.id",
+        "installation.account.login",
+        "installation.account.type",
+        "installation.repository_selection",
+        "installation.suspended_at",
+        "repositories"
+      ],
+      "examplePayload": {
+        "action": "created",
+        "installation": {
+          "id": 12345678,
+          "account": {
+            "login": "octocat",
+            "id": 1,
+            "type": "User"
+          },
+          "repository_selection": "selected",
+          "app_id": 12345,
+          "app_slug": "codelens",
+          "suspended_at": null
+        },
+        "repositories": [
+          {
+            "id": 1296269,
+            "name": "Hello-World",
+            "full_name": "octocat/Hello-World",
+            "private": false
+          }
+        ],
+        "sender": {
+          "login": "octocat",
+          "id": 1
+        }
+      }
+    },
+    "installation_repositories_added": {
+      "headers": {
+        "X-GitHub-Event": "installation_repositories"
+      },
+      "usedIn": "backend/app/routers/webhooks.py",
+      "fieldsUsed": [
+        "action",
+        "installation.id",
+        "repositories_added",
+        "repositories_removed"
+      ],
+      "examplePayload": {
+        "action": "added",
+        "installation": {
+          "id": 12345678,
+          "account": {
+            "login": "octocat",
+            "id": 1,
+            "type": "User"
+          }
+        },
+        "repository_selection": "selected",
+        "repositories_added": [
+          {
+            "id": 1296270,
+            "name": "Another-Repo",
+            "full_name": "octocat/Another-Repo",
+            "private": true
+          }
+        ],
+        "repositories_removed": [],
+        "sender": {
+          "login": "octocat",
+          "id": 1
+        }
+      }
+    }
+  },
+  "oauth_browser_redirect": {
+    "_note": "Not a JSON API response. User's browser is redirected to GitHub, then back to CodeLens with query params.",
+    "authorizeUrl": "https://github.com/login/oauth/authorize?client_id=...&redirect_uri=...&scope=read%3Auser+repo&state=...",
+    "callbackQueryParams": {
+      "code": "authorization_code_from_github",
+      "state": "csrf_token_matching_oauth_state_cookie"
+    }
+  }
+}

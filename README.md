@@ -575,3 +575,136 @@ Add to `.cursor/mcp.json`:
 ## License
 
 MIT
+
+
+
+python-jose -JWT and cryptographic backend
+httpx - POST token exchange  
+python-dotenv - to load env file
+sqlalchemy  - to interac with the db
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  BROWSER  (React 19 + react-router-dom 7)                                    ║
+║  File: frontend/src/pages/PrReport.jsx                                         ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+        │
+        │ ① Page mount: api.report()  OR  user clicks "Re-analyze" → api.analyze()
+        │
+        │  Lib: native **fetch** (client.js)
+        │       credentials: "include"  → sends **codelens_session** cookie
+        │       JSON parse via res.json()
+        ▼
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  VITE DEV SERVER  (:5173)  — vite.config.js proxy                            ║
+║  Lib: **Vite 6** + @vitejs/plugin-react                                        ║
+║  Proxies: /api/*  /auth/*  →  http://localhost:8000                           ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+        │
+        │ ② HTTP forwarded unchanged (Cookie header preserved)
+        ▼
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  FASTAPI APP  (:8000)  — uvicorn serves app.main:app                         ║
+║  Libs: **FastAPI** + **Starlette** (Request/Response, middleware)            ║
+║        **CORSMiddleware** (allow_credentials=True)                           ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+        │
+        ├──────────────────────────── GET /api/repos/{o}/{r}/pulls/{n}/report ──┐
+        │                                                                        │
+        │   api.py :: get_report()                                             │
+        │   Lib: **SQLAlchemy 2** async + **aiosqlite**                          │
+        │        SELECT pr_reports WHERE owner, repo, pr_number                  │
+        │                                                                        │
+        │   ◄── 200 { ...cached AnalysisReport JSON... }                        │
+        │   ◄── 404 "Report not found"  → frontend calls analyze()              │
+        │                                                                        │
+        └──────────────────────────── POST /api/repos/{o}/{r}/pulls/{n}/analyze ┘
+                │
+                │ ③ Auth dependency
+                ▼
+        ┌───────────────────────────────────────┐
+        │  auth.py :: get_current_user()        │
+        │  Lib: **python-jose** (jwt.decode)    │
+        │       **SQLAlchemy** → users table    │
+        │  Read cookie: codelens_session        │
+        │  sub → User.id → User.access_token    │
+        └───────────────────────────────────────┘
+                │
+                │ ④ Route handler
+                ▼
+        ┌───────────────────────────────────────┐
+        │  api.py :: analyze_pr()               │
+        │  GitHubClient(user.access_token)      │
+        │  → run_pr_analysis(..., source=oauth)│
+        └───────────────────────────────────────┘
+                │
+                │ ⑤ Pipeline — analyze_pipeline.py
+                ▼
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  OUTBOUND TO GITHUB  (GitHubClient in services/github.py)                    ║
+║  Lib: **httpx** AsyncClient (GET/POST, timeout 30–60s)                       ║
+║  Headers: Authorization: Bearer <user OAuth token>                           ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+        │
+        │  Sequential + parallel GitHub REST v3 calls:
+        │
+        ├─► GET  /repos/{o}/{r}/pulls/{n}              → PR metadata
+        ├─► GET  /repos/{o}/{r}/pulls/{n}/files        → file list + patches
+        ├─► GET  compare / contents (enrich_pr_file_patches) → missing diffs
+        ├─► GET  /repos/{o}/{r}/pulls/{n}/commits     → commit SHAs
+        ├─► GET  /repos/{o}/{r}/commits/{sha}          → per-commit file diffs
+        ├─► GET  reviews + review_comments + issue_comments (discussion.py)
+        │
+        │  ◄── JSON responses aggregated in Python dicts/lists
+        ▼
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  LOCAL ANALYSIS  (no GitHub)                                                 ║
+║  analyzers/service.py :: analyze_pull_request()                              ║
+║  Libs: pure Python (**re**, stdlib) in engine.py                             ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+        │
+        ├─► engine.py  → 6 dimensions (volume, drift, functionality,
+        │                  critical paths, security, tests)
+        ├─► compute_risk_score() + rule_based_summary()
+        ├─► summarize.py → rule-based PR overview, file summaries, discussion
+        │
+        │  Optional AI branch (if GROQ_API_KEY / AI key set):
+        ▼
+        ┌───────────────────────────────────────┐
+        │  analyzers/ai.py :: ai_complete()     │
+        │  Lib: **httpx** POST                   │
+        │  → Groq/OpenAI-compatible /chat/     │
+        │    completions                         │
+        └───────────────────────────────────────┘
+                │
+                │ ⑥ Persist result
+                ▼
+        ┌───────────────────────────────────────┐
+        │  SQLAlchemy → pr_reports table        │
+        │  Lib: **aiosqlite** (SQLite file)     │
+        │  UPSERT: report_json, head_sha,       │
+        │          user_id, source="oauth"     │
+        └───────────────────────────────────────┘
+                │
+                │ ⑦ Optional side-effects (if enabled)
+                ▼
+        ┌───────────────────────────────────────┐
+        │  GitHub App check (checks.py)         │
+        │  Lib: **httpx** + PyJWT-style signing │
+        │  POST Check Runs API                  │
+        │  (installation token, not user token) │
+        └───────────────────────────────────────┘
+                │
+                │ ⑧ Response
+                ▼
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  HTTP 200  Content-Type: application/json                                    ║
+║  Body: AnalysisReport dict (riskScore, dimensions, fileChanges, commits, …) ║
+║  Lib: FastAPI/Pydantic serializes dict → JSON                                ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+        │
+        │ ⑨ fetch() in client.js → res.json() → setReport(data)
+        ▼
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  REACT UI re-renders tabs: Overview | Changes | Commits | Discussion | Risk║
+╚══════════════════════════════════════════════════════════════════════════════╝
