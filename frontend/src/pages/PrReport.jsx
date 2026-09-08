@@ -408,7 +408,7 @@ export default function PrReport() {
                 )}
               </div>
               <p className="muted panel-intro">
-                File-by-file summary with diffs — like CodeRabbit. Expand any file to see what changed.
+                File-by-file summary with diffs. Expand any file to see what changed.
               </p>
               <FileWalkthrough
                 files={report.fileChanges || []}
