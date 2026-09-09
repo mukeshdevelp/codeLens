@@ -1,45 +1,17 @@
-import { useState } from "react";
 import AiSourceBadge from "./AiSourceBadge";
 import DiffViewer from "./DiffViewer";
-
-const STATUS_LABEL = {
-  added: "A",
-  removed: "D",
-  modified: "M",
-  renamed: "R",
-  changed: "C",
-};
-
-function statusClass(status) {
-  return `file-status file-status-${status || "modified"}`;
-}
+import { STATUS_LABEL, statusClass } from "../utils/fileStatus";
+import { useExpandableSet } from "../hooks/useExpandableSet";
 
 function SummaryBadge({ file }) {
   return <AiSourceBadge source={file.summarySource} provider={file.summaryProvider} />;
 }
 
 export default function FileWalkthrough({ files, aiProvider, prHtmlUrl }) {
-  const [openFiles, setOpenFiles] = useState(() => new Set(files.slice(0, 2).map((f) => f.filename)));
-  const [expandAll, setExpandAll] = useState(false);
-
-  const toggle = (filename) => {
-    setOpenFiles((prev) => {
-      const next = new Set(prev);
-      if (next.has(filename)) next.delete(filename);
-      else next.add(filename);
-      return next;
-    });
-  };
-
-  const handleExpandAll = () => {
-    if (expandAll) {
-      setOpenFiles(new Set());
-      setExpandAll(false);
-    } else {
-      setOpenFiles(new Set(files.map((f) => f.filename)));
-      setExpandAll(true);
-    }
-  };
+  const { openKeys, toggle, expandAll, collapseAll } = useExpandableSet(
+    files?.slice(0, 2).map((f) => f.filename) ?? []
+  );
+  const expandAllActive = files?.length > 0 && openKeys.size === files.length;
 
   if (!files?.length) {
     return <p className="muted">No file changes found.</p>;
@@ -48,6 +20,11 @@ export default function FileWalkthrough({ files, aiProvider, prHtmlUrl }) {
   const totalAdd = files.reduce((s, f) => s + (f.additions || 0), 0);
   const totalDel = files.reduce((s, f) => s + (f.deletions || 0), 0);
   const aiCount = files.filter((f) => f.summarySource === "ai").length;
+
+  const handleExpandAll = () => {
+    if (expandAllActive) collapseAll();
+    else expandAll(files.map((f) => f.filename));
+  };
 
   return (
     <div className="walkthrough">
@@ -60,7 +37,7 @@ export default function FileWalkthrough({ files, aiProvider, prHtmlUrl }) {
           )}
         </span>
         <button type="button" className="btn ghost btn-sm" onClick={handleExpandAll}>
-          {expandAll ? "Collapse all" : "Expand all"}
+          {expandAllActive ? "Collapse all" : "Expand all"}
         </button>
       </div>
 
@@ -70,7 +47,8 @@ export default function FileWalkthrough({ files, aiProvider, prHtmlUrl }) {
 
       <div className="file-list">
         {files.map((file) => {
-          const isOpen = openFiles.has(file.filename);
+          const isOpen = openKeys.has(file.filename);
+          const providerLabel = file.summaryProvider || aiProvider || "AI";
           return (
             <div key={file.filename} className={`file-card ${isOpen ? "open" : ""}`}>
               <button type="button" className="file-card-header" onClick={() => toggle(file.filename)}>
@@ -91,7 +69,7 @@ export default function FileWalkthrough({ files, aiProvider, prHtmlUrl }) {
                   <p className="file-summary">{file.summary}</p>
                   {file.summarizedAt && (
                     <p className="muted file-summarized-at">
-                      Groq summary saved {new Date(file.summarizedAt).toLocaleString()}
+                      {providerLabel} summary saved {new Date(file.summarizedAt).toLocaleString()}
                     </p>
                   )}
                   <DiffViewer

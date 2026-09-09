@@ -1,36 +1,26 @@
-import { useState } from "react";
 import DiffViewer from "./DiffViewer";
-
-const STATUS_LABEL = {
-  added: "A",
-  removed: "D",
-  modified: "M",
-  renamed: "R",
-  changed: "C",
-};
-
-function statusClass(status) {
-  return `file-status file-status-${status || "modified"}`;
-}
+import { STATUS_LABEL, statusClass } from "../utils/fileStatus";
+import { useExpandableSet } from "../hooks/useExpandableSet";
 
 function CommitFileCard({ file, commitUrl }) {
-  const [open, setOpen] = useState(false);
+  const { openKeys, toggle } = useExpandableSet();
+  const isOpen = openKeys.has(file.filename);
   const label = file.previousFilename
     ? `${file.previousFilename} → ${file.filename}`
     : file.filename;
 
   return (
-    <div className={`commit-file-card ${open ? "open" : ""}`}>
-      <button type="button" className="commit-file-header" onClick={() => setOpen(!open)}>
+    <div className={`commit-file-card ${isOpen ? "open" : ""}`}>
+      <button type="button" className="commit-file-header" onClick={() => toggle(file.filename)}>
         <span className={statusClass(file.status)}>{STATUS_LABEL[file.status] || "M"}</span>
         <span className="commit-file-name">{label}</span>
         <span className="file-stats">
           {file.additions > 0 && <span className="diff-stat-add">+{file.additions}</span>}
           {file.deletions > 0 && <span className="diff-stat-del">-{file.deletions}</span>}
         </span>
-        <span className="file-chevron">{open ? "▾" : "▸"}</span>
+        <span className="file-chevron">{isOpen ? "▾" : "▸"}</span>
       </button>
-      {open && (
+      {isOpen && (
         <div className="commit-file-body">
           <p className="muted commit-diff-label">
             Changes in this commit (parent → {file.filename})
@@ -48,23 +38,13 @@ function CommitFileCard({ file, commitUrl }) {
 }
 
 export default function CommitWalkthrough({ commits, prHtmlUrl }) {
-  const [openCommits, setOpenCommits] = useState(() => new Set(commits?.length ? [commits[0].sha] : []));
+  const { openKeys, toggle, expandAll, collapseAll } = useExpandableSet(
+    commits?.length ? [commits[0].sha] : []
+  );
 
   if (!commits?.length) {
     return <p className="muted">No commits found for this pull request.</p>;
   }
-
-  const toggleCommit = (sha) => {
-    setOpenCommits((prev) => {
-      const next = new Set(prev);
-      if (next.has(sha)) next.delete(sha);
-      else next.add(sha);
-      return next;
-    });
-  };
-
-  const expandAll = () => setOpenCommits(new Set(commits.map((c) => c.sha)));
-  const collapseAll = () => setOpenCommits(new Set());
 
   const totalAdd = commits.reduce((s, c) => s + (c.additions || 0), 0);
   const totalDel = commits.reduce((s, c) => s + (c.deletions || 0), 0);
@@ -78,7 +58,7 @@ export default function CommitWalkthrough({ commits, prHtmlUrl }) {
           <span className="diff-stat-del">-{totalDel}</span>
         </span>
         <div className="commit-toolbar-actions">
-          <button type="button" className="btn ghost btn-sm" onClick={expandAll}>Expand all</button>
+          <button type="button" className="btn ghost btn-sm" onClick={() => expandAll(commits.map((c) => c.sha))}>Expand all</button>
           <button type="button" className="btn ghost btn-sm" onClick={collapseAll}>Collapse all</button>
           {prHtmlUrl && (
             <a href={`${prHtmlUrl}/commits`} target="_blank" rel="noreferrer" className="btn ghost btn-sm">
@@ -96,14 +76,14 @@ export default function CommitWalkthrough({ commits, prHtmlUrl }) {
 
       <ol className="commit-walkthrough-list">
         {commits.map((commit, index) => {
-          const isOpen = openCommits.has(commit.sha);
+          const isOpen = openKeys.has(commit.sha);
           const shortSha = commit.sha?.slice(0, 7) || "???????";
           const firstLine = (commit.message || "").split("\n")[0];
           const restMessage = (commit.message || "").split("\n").slice(1).join("\n").trim();
 
           return (
             <li key={commit.sha || index} className={`commit-walkthrough-card ${isOpen ? "open" : ""}`}>
-              <button type="button" className="commit-walkthrough-header" onClick={() => toggleCommit(commit.sha)}>
+              <button type="button" className="commit-walkthrough-header" onClick={() => toggle(commit.sha)}>
                 <span className="commit-index">#{index + 1}</span>
                 <div className="commit-walkthrough-meta">
                   <div className="commit-walkthrough-title-row">

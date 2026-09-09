@@ -9,6 +9,7 @@ import httpx
 
 from app.analyzers.types import FileChange
 from app.config import settings
+from app.services.github_http import GITHUB_API_BASE, github_api_headers
 
 
 class GitHubClient:
@@ -17,46 +18,70 @@ class GitHubClient:
     def __init__(self, access_token: str):
         """Authenticate requests with a user OAuth token or App installation token."""
         self.access_token = access_token
-        self.base = "https://api.github.com"
+        self.base = GITHUB_API_BASE
 
     def _headers(self) -> dict[str, str]:
-        return {
-            "Authorization": f"Bearer {self.access_token}",
-            "Accept": "application/vnd.github+json",
-            "X-GitHub-Api-Version": "2022-11-28",
-        }
+        return github_api_headers(self.access_token)
+
+    async def _request(
+        self,
+        method: str,
+        path: str,
+        *,
+        timeout: int = 30,
+        params: dict[str, Any] | None = None,
+        json: dict[str, Any] | None = None,
+        allow_404: bool = False,
+    ) -> httpx.Response:
+        url = path if path.startswith("http") else f"{self.base}{path}"
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            res = await client.request(
+                method,
+                url,
+                headers=self._headers(),
+                params=params,
+                json=json,
+            )
+        if allow_404 and res.status_code == 404:
+            return res
+        res.raise_for_status()
+        return res
+
+    async def _get_json(
+        self,
+        path: str,
+        *,
+        timeout: int = 30,
+        params: dict[str, Any] | None = None,
+        allow_404: bool = False,
+    ) -> dict[str, Any] | list[Any] | None:
+        res = await self._request("GET", path, timeout=timeout, params=params, allow_404=allow_404)
+        if allow_404 and res.status_code == 404:
+            return None
+        return res.json()
 
     async def get_user(self) -> dict[str, Any]:
-        async with httpx.AsyncClient(timeout=30) as client:
-            res = await client.get(f"{self.base}/user", headers=self._headers())
-            res.raise_for_status()
-            return res.json()
+        return await self._get_json("/user")  # type: ignore[return-value]
 
     async def list_repos(self, page: int = 1, per_page: int = 30) -> list[dict[str, Any]]:
-        async with httpx.AsyncClient(timeout=30) as client:
-            res = await client.get(
-                f"{self.base}/user/repos",
-                headers=self._headers(),
-                params={"sort": "updated", "per_page": per_page, "page": page, "affiliation": "owner,collaborator,organization_member"},
-            )
-            res.raise_for_status()
-            return res.json()
+        return await self._get_json(  # type: ignore[return-value]
+            "/user/repos",
+            params={
+                "sort": "updated",
+                "per_page": per_page,
+                "page": page,
+                "affiliation": "owner,collaborator,organization_member",
+            },
+        )
 
     async def list_pulls(self, owner: str, repo: str, state: str = "open") -> list[dict[str, Any]]:
-        async with httpx.AsyncClient(timeout=30) as client:
-            res = await client.get(
-                f"{self.base}/repos/{owner}/{repo}/pulls",
-                headers=self._headers(),
-                params={"state": state, "per_page": 30, "sort": "updated"},
-            )
-            res.raise_for_status()
-            return res.json()
+        return await self._get_json(  # type: ignore[return-value]
+            f"/repos/{owner}/{repo}/pulls",
+            params={"state": state, "per_page": 30, "sort": "updated"},
+        )
 
     async def get_pull(self, owner: str, repo: str, number: int) -> dict[str, Any]:
-        async with httpx.AsyncClient(timeout=30) as client:
-            res = await client.get(f"{self.base}/repos/{owner}/{repo}/pulls/{number}", headers=self._headers())
-            res.raise_for_status()
-            return res.json()
+        return await self._get_json(f"/repos/{owner}/{repo}/pulls/{number}")  # type: ignore[return-value]
 
     async def _paginate(self, url: str, params: dict | None = None) -> list[dict[str, Any]]:
         items: list[dict[str, Any]] = []
@@ -103,113 +128,102 @@ class GitHubClient:
         )
 
     async def get_commit(self, owner: str, repo: str, sha: str) -> dict[str, Any]:
-        async with httpx.AsyncClient(timeout=60) as client:
-            res = await client.get(
-                f"{self.base}/repos/{owner}/{repo}/commits/{sha}",
-                headers=self._headers(),
-            )
-            res.raise_for_status()
-            return res.json()
+        return await self._get_json(f"/repos/{owner}/{repo}/commits/{sha}", timeout=60)  # type: ignore[return-value]
 
     async def compare_commits(self, owner: str, repo: str, base: str, head: str) -> dict[str, Any]:
-        async with httpx.AsyncClient(timeout=60) as client:
-            res = await client.get(
-                f"{self.base}/repos/{owner}/{repo}/compare/{base}...{head}",
-                headers=self._headers(),
-            )
-            res.raise_for_status()
-            return res.json()
+        return await self._get_json(  # type: ignore[return-value]
+            f"/repos/{owner}/{repo}/compare/{base}...{head}",
+            timeout=60,
+        )
 
     async def get_file_text(self, owner: str, repo: str, path: str, ref: str) -> str | None:
-        async with httpx.AsyncClient(timeout=60) as client:
-            res = await client.get(
-                f"{self.base}/repos/{owner}/{repo}/contents/{path}",
-                headers=self._headers(),
-                params={"ref": ref},
-            )
-            if res.status_code == 404:
-                return None
-            res.raise_for_status()
-            data = res.json()
-            if isinstance(data, list):
-                return None
-            content = data.get("content")
-            if not content:
-                return None
-            raw = base64.b64decode(content)
-            return raw.decode("utf-8", errors="replace")
+        res = await self._request(
+            "GET",
+            f"/repos/{owner}/{repo}/contents/{path}",
+            timeout=60,
+            params={"ref": ref},
+            allow_404=True,
+        )
+        if res.status_code == 404:
+            return None
+        data = res.json()
+        if isinstance(data, list):
+            return None
+        content = data.get("content")
+        if not content:
+            return None
+        raw = base64.b64decode(content)
+        return raw.decode("utf-8", errors="replace")
 
     async def create_check_run(self, owner: str, repo: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Create a GitHub Check Run on a commit (requires GitHub App ``checks:write`` permission)."""
-        async with httpx.AsyncClient(timeout=60) as client:
-            res = await client.post(
-                f"{self.base}/repos/{owner}/{repo}/check-runs",
-                headers=self._headers(),
-                json=payload,
-            )
-            res.raise_for_status()
-            return res.json()
+        res = await self._request(
+            "POST",
+            f"/repos/{owner}/{repo}/check-runs",
+            timeout=60,
+            json=payload,
+        )
+        return res.json()
 
     async def update_check_run(
         self, owner: str, repo: str, check_run_id: int, payload: dict[str, Any]
     ) -> dict[str, Any]:
         """Update an existing Check Run (e.g. mark completed after analysis finishes)."""
-        async with httpx.AsyncClient(timeout=60) as client:
-            res = await client.patch(
-                f"{self.base}/repos/{owner}/{repo}/check-runs/{check_run_id}",
-                headers=self._headers(),
-                json=payload,
-            )
-            res.raise_for_status()
-            return res.json()
+        res = await self._request(
+            "PATCH",
+            f"/repos/{owner}/{repo}/check-runs/{check_run_id}",
+            timeout=60,
+            json=payload,
+        )
+        return res.json()
 
     async def create_issue_comment(
         self, owner: str, repo: str, issue_number: int, body: str
     ) -> dict[str, Any]:
         """Post a comment on a PR (PRs are issues in GitHub's API). Used for CodeLens summaries."""
-        async with httpx.AsyncClient(timeout=60) as client:
-            res = await client.post(
-                f"{self.base}/repos/{owner}/{repo}/issues/{issue_number}/comments",
-                headers=self._headers(),
-                json={"body": body},
-            )
-            res.raise_for_status()
-            return res.json()
+        res = await self._request(
+            "POST",
+            f"/repos/{owner}/{repo}/issues/{issue_number}/comments",
+            timeout=60,
+            json={"body": body},
+        )
+        return res.json()
 
     async def list_pr_reviews(self, owner: str, repo: str, number: int) -> list[dict[str, Any]]:
-        async with httpx.AsyncClient(timeout=30) as client:
-            res = await client.get(
-                f"{self.base}/repos/{owner}/{repo}/pulls/{number}/reviews",
-                headers=self._headers(),
-            )
-            res.raise_for_status()
-            return res.json()
+        return await self._get_json(f"/repos/{owner}/{repo}/pulls/{number}/reviews")  # type: ignore[return-value]
 
     async def list_pr_review_comments(self, owner: str, repo: str, number: int) -> list[dict[str, Any]]:
-        async with httpx.AsyncClient(timeout=30) as client:
-            res = await client.get(
-                f"{self.base}/repos/{owner}/{repo}/pulls/{number}/comments",
-                headers=self._headers(),
-                params={"per_page": 100},
-            )
-            res.raise_for_status()
-            return res.json()
+        return await self._get_json(  # type: ignore[return-value]
+            f"/repos/{owner}/{repo}/pulls/{number}/comments",
+            params={"per_page": 100},
+        )
 
     async def list_issue_comments(self, owner: str, repo: str, number: int) -> list[dict[str, Any]]:
-        async with httpx.AsyncClient(timeout=30) as client:
-            res = await client.get(
-                f"{self.base}/repos/{owner}/{repo}/issues/{number}/comments",
-                headers=self._headers(),
-                params={"per_page": 100},
-            )
-            res.raise_for_status()
-            return res.json()
+        return await self._get_json(  # type: ignore[return-value]
+            f"/repos/{owner}/{repo}/issues/{number}/comments",
+            params={"per_page": 100},
+        )
 
     async def get_repo(self, owner: str, repo: str) -> dict[str, Any]:
+        return await self._get_json(f"/repos/{owner}/{repo}")  # type: ignore[return-value]
+
+    async def _mutate_json(
+        self,
+        method: str,
+        path: str,
+        payload: dict[str, Any],
+    ) -> dict[str, Any]:
+        """POST/PUT helper that surfaces GitHub API errors as ``ValueError``."""
         async with httpx.AsyncClient(timeout=30) as client:
-            res = await client.get(f"{self.base}/repos/{owner}/{repo}", headers=self._headers())
-            res.raise_for_status()
-            return res.json()
+            res = await client.request(
+                method,
+                f"{self.base}{path}",
+                headers=self._headers(),
+                json=payload,
+            )
+        if res.status_code >= 400:
+            raise ValueError(_github_error_detail(res))
+        return res.json()
 
     async def approve_pull_request(
         self,
@@ -219,15 +233,11 @@ class GitHubClient:
         body: str = "Approved via CodeLens after review.",
     ) -> dict[str, Any]:
         """Submit an APPROVE pull request review on GitHub."""
-        async with httpx.AsyncClient(timeout=30) as client:
-            res = await client.post(
-                f"{self.base}/repos/{owner}/{repo}/pulls/{number}/reviews",
-                headers=self._headers(),
-                json={"event": "APPROVE", "body": body},
-            )
-            if res.status_code >= 400:
-                raise ValueError(_github_error_detail(res))
-            return res.json()
+        return await self._mutate_json(
+            "POST",
+            f"/repos/{owner}/{repo}/pulls/{number}/reviews",
+            {"event": "APPROVE", "body": body},
+        )
 
     async def merge_pull_request(
         self,
@@ -242,15 +252,11 @@ class GitHubClient:
         payload: dict[str, Any] = {"merge_method": merge_method}
         if commit_title:
             payload["commit_title"] = commit_title
-        async with httpx.AsyncClient(timeout=30) as client:
-            res = await client.put(
-                f"{self.base}/repos/{owner}/{repo}/pulls/{number}/merge",
-                headers=self._headers(),
-                json=payload,
-            )
-            if res.status_code >= 400:
-                raise ValueError(_github_error_detail(res))
-            return res.json()
+        return await self._mutate_json(
+            "PUT",
+            f"/repos/{owner}/{repo}/pulls/{number}/merge",
+            payload,
+        )
 
 
 def _github_error_detail(res: httpx.Response) -> str:

@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import Layout from "../components/Layout";
+import Breadcrumb from "../components/ui/Breadcrumb";
+import ErrorBanner from "../components/ui/ErrorBanner";
+import LoadingSpinner from "../components/ui/LoadingSpinner";
 
 export default function RepoDetail() {
   const { owner, repo } = useParams();
@@ -18,19 +21,20 @@ export default function RepoDetail() {
 
   return (
     <Layout title={`${owner}/${repo}`}>
-      <div className="breadcrumb">
-        <Link to="/dashboard">Repositories</Link>
-        <span>/</span>
-        <span>{owner}/{repo}</span>
-      </div>
+      <Breadcrumb
+        items={[
+          { label: "Repositories", to: "/dashboard" },
+          { label: `${owner}/${repo}` },
+        ]}
+      />
 
       <section className="hero compact">
         <h2>Open pull requests</h2>
         <p>Analyze a PR to get risk signals, focus areas, and an executive summary.</p>
       </section>
 
-      {loading && <div className="page-center"><div className="spinner" /></div>}
-      {error && <div className="error-banner">{error}</div>}
+      {loading && <LoadingSpinner />}
+      <ErrorBanner message={error} />
 
       {!loading && !error && (
         <div className="pr-list">

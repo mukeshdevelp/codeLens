@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import secrets
-
-import httpx
 from typing import Annotated
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
 from jose import JWTError, jwt
@@ -21,6 +20,20 @@ from app.services.github import GitHubClient, exchange_code_for_token, github_oa
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 ALGORITHM = "HS256"
+SESSION_COOKIE = "codelens_session"
+OAUTH_STATE_COOKIE = "oauth_state"
+
+
+def _cookie_options(max_age: int | None = None) -> dict:
+    opts = {
+        "httponly": True,
+        "samesite": "lax",
+        "secure": settings.use_secure_cookies,
+        "path": "/",
+    }
+    if max_age is not None:
+        opts["max_age"] = max_age
+    return opts
 
 
 def create_session_token(user_id: int) -> str:
@@ -28,15 +41,11 @@ def create_session_token(user_id: int) -> str:
 
 
 def set_session_cookie(response: Response, token: str) -> None:
-    response.set_cookie(
-        key="codelens_session",
-        value=token,
-        httponly=True,
-        samesite="lax",
-        secure=settings.use_secure_cookies,
-        path="/",
-        max_age=60 * 60 * 24 * 7,
-    )
+    response.set_cookie(key=SESSION_COOKIE, value=token, **_cookie_options(max_age=60 * 60 * 24 * 7))
+
+
+def clear_cookie(response: Response, name: str) -> None:
+    response.delete_cookie(name, **_cookie_options())
 
 
 def auth_error_redirect(reason: str = "auth_failed") -> RedirectResponse:
@@ -45,7 +54,7 @@ def auth_error_redirect(reason: str = "auth_failed") -> RedirectResponse:
 
 async def get_current_user(request: Request, db: Annotated[AsyncSession, Depends(get_db)]) -> User:
     """FastAPI dependency: resolve logged-in user from ``codelens_session`` cookie."""
-    token = request.cookies.get("codelens_session")
+    token = request.cookies.get(SESSION_COOKIE)
     if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")
     try:
@@ -66,15 +75,7 @@ async def login_github():
         return auth_error_redirect("auth_failed")
     state = secrets.token_urlsafe(16)
     redirect = RedirectResponse(github_oauth_url(state))
-    redirect.set_cookie(
-        "oauth_state",
-        state,
-        httponly=True,
-        samesite="lax",
-        secure=settings.use_secure_cookies,
-        path="/",
-        max_age=600,
-    )
+    redirect.set_cookie(key=OAUTH_STATE_COOKIE, value=state, **_cookie_options(max_age=600))
     return redirect
 
 
@@ -85,7 +86,7 @@ async def github_callback(
     state: str | None = None,
     db: Annotated[AsyncSession, Depends(get_db)] = ...,
 ):
-    saved_state = request.cookies.get("oauth_state")
+    saved_state = request.cookies.get(OAUTH_STATE_COOKIE)
     if not code or not state or not saved_state or state != saved_state:
         return auth_error_redirect("invalid_oauth_state")
 
@@ -118,12 +119,7 @@ async def github_callback(
 
     redirect = RedirectResponse(f"{settings.frontend_url}/dashboard")
     set_session_cookie(redirect, create_session_token(user.id))
-    redirect.delete_cookie(
-        "oauth_state",
-        path="/",
-        secure=settings.use_secure_cookies,
-        samesite="lax",
-    )
+    clear_cookie(redirect, OAUTH_STATE_COOKIE)
     return redirect
 
 
@@ -153,10 +149,5 @@ async def me(user: Annotated[User, Depends(get_current_user)]):
 
 @router.post("/logout")
 async def logout(response: Response):
-    response.delete_cookie(
-        "codelens_session",
-        path="/",
-        secure=settings.use_secure_cookies,
-        samesite="lax",
-    )
+    clear_cookie(response, SESSION_COOKIE)
     return {"ok": True}

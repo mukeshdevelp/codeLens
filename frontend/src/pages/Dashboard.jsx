@@ -2,16 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import Layout from "../components/Layout";
+import ErrorBanner from "../components/ui/ErrorBanner";
+import LoadingSpinner from "../components/ui/LoadingSpinner";
 
 function matchesRepoSearch(repo, query) {
   const q = query.trim().toLowerCase();
   if (!q) return true;
-  const haystack = [
-    repo.fullName,
-    repo.name,
-    repo.owner,
-    repo.description,
-  ]
+  const haystack = [repo.fullName, repo.name, repo.owner, repo.description]
     .filter(Boolean)
     .join(" ")
     .toLowerCase();
@@ -65,8 +62,8 @@ export default function Dashboard() {
         </div>
       )}
 
-      {loading && <div className="page-center"><div className="spinner" /></div>}
-      {error && <div className="error-banner">{error}</div>}
+      {loading && <LoadingSpinner />}
+      <ErrorBanner message={error} />
 
       {!loading && !error && filteredRepos.length > 0 && (
         <div className="repo-grid">

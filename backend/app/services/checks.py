@@ -1,12 +1,7 @@
-"""GitHub Checks API integration — surface CodeLens risk on the PR checks tab.
-
-Integrated so engineers see pass/fail/neutral status on github.com before opening
-CodeLens. The check ``details_url`` deep-links to the signed embed report page.
-"""
+"""GitHub Checks API integration — surface CodeLens risk on the PR checks tab."""
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any
 
 from sqlalchemy import select
@@ -14,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.db.models import GitHubInstallation, PrCheckRun, PrReport
-from app.services.embed_tokens import embed_token
+from app.services.embed_tokens import build_embed_url, embed_token
 from app.services.github import GitHubClient
 
 
@@ -29,25 +24,26 @@ def _risk_to_conclusion(risk_level: str) -> str:
 
 def _embed_details_url(owner: str, repo: str, pr_number: int) -> str:
     """Build production URL for Check Run details (signed embed when secret configured)."""
-    base = f"{settings.frontend_url.rstrip('/')}/embed/repos/{owner}/{repo}/pulls/{pr_number}"
+    token = None
     if settings.embed_configured():
         token = embed_token(owner, repo, pr_number, settings.embed_shared_secret)
-        return f"{base}?token={token}&from=github"
-    return f"{base}?from=github"
+    return build_embed_url(owner, repo, pr_number, token=token, from_github=True)
+
+
+def _focus_area_lines(report: dict[str, Any], limit: int = 3) -> str:
+    focus = report.get("focusAreas") or []
+    lines = "\n".join(f"- {a.get('area')}: {a.get('reason')}" for a in focus[:limit])
+    return lines or "No critical focus areas."
 
 
 def _check_output(report: dict[str, Any]) -> dict[str, str]:
     """GitHub Check output block — title + summary shown on the checks tab."""
     risk = report.get("riskLevel", "unknown").upper()
     score = report.get("riskScore", 0)
-    focus = report.get("focusAreas") or []
-    focus_lines = "\n".join(
-        f"- {a.get('area')}: {a.get('reason')}" for a in focus[:3]
-    ) or "No critical focus areas."
     return {
         "title": f"CodeLens {risk} risk ({score}/100)",
         "summary": report.get("executiveSummary") or report.get("prOverview") or "Analysis complete.",
-        "text": f"### Focus areas\n{focus_lines}",
+        "text": f"### Focus areas\n{_focus_area_lines(report)}",
     }
 
 

@@ -100,6 +100,86 @@ class ReviewActivity:
     line: int | None = None
 
 
+def _file_change_to_dict(f: FileChangeSummary) -> dict[str, Any]:
+    return {
+        "filename": f.filename,
+        "status": f.status,
+        "additions": f.additions,
+        "deletions": f.deletions,
+        "summary": f.summary,
+        "summarySource": f.summary_source,
+        "summaryProvider": f.summary_provider,
+        "summarizedAt": f.summarized_at,
+        "patch": f.patch,
+        "truncated": f.truncated,
+    }
+
+
+def _review_activity_to_dict(a: ReviewActivity) -> dict[str, Any]:
+    return {
+        "type": a.type,
+        "author": a.author,
+        "body": a.body,
+        "createdAt": a.created_at,
+        "state": a.state,
+        "file": a.file,
+        "line": a.line,
+    }
+
+
+def _commit_to_dict(c: PrCommit) -> dict[str, Any]:
+    return {
+        "sha": c.sha,
+        "message": c.message,
+        "author": c.author,
+        "date": c.date,
+        "htmlUrl": c.html_url,
+        "additions": c.additions,
+        "deletions": c.deletions,
+        "files": [
+            {
+                "filename": f.filename,
+                "status": f.status,
+                "additions": f.additions,
+                "deletions": f.deletions,
+                "patch": f.patch,
+                "previousFilename": f.previous_filename,
+                "patchUnavailable": f.patch_unavailable,
+            }
+            for f in c.files
+        ],
+    }
+
+
+def _focus_area_to_dict(f: FocusArea) -> dict[str, Any]:
+    return {
+        "rank": f.rank,
+        "area": f.area,
+        "reason": f.reason,
+        "severity": f.severity,
+        "files": f.files,
+    }
+
+
+def _dimension_to_dict(d: DimensionResult) -> dict[str, Any]:
+    return {
+        "name": d.name,
+        "score": d.score,
+        "summary": d.summary,
+        "findings": [
+            {
+                "id": f.id,
+                "category": f.category,
+                "severity": f.severity,
+                "title": f.title,
+                "description": f.description,
+                "evidence": f.evidence,
+            }
+            for f in d.findings
+        ],
+    }
+
+
 @dataclass
 class AnalysisReport:
     """Full PR analysis payload returned to the API and cached in SQLite."""
@@ -130,87 +210,12 @@ class AnalysisReport:
             "riskScore": self.risk_score,
             "executiveSummary": self.executive_summary,
             "prOverview": self.pr_overview,
-            "fileChanges": [
-                {
-                    "filename": f.filename,
-                    "status": f.status,
-                    "additions": f.additions,
-                    "deletions": f.deletions,
-                    "summary": f.summary,
-                    "summarySource": f.summary_source,
-                    "summaryProvider": f.summary_provider,
-                    "summarizedAt": f.summarized_at,
-                    "patch": f.patch,
-                    "truncated": f.truncated,
-                }
-                for f in self.file_changes
-            ],
+            "fileChanges": [_file_change_to_dict(f) for f in self.file_changes],
             "discussionSummary": self.discussion_summary,
-            "reviewActivity": [
-                {
-                    "type": a.type,
-                    "author": a.author,
-                    "body": a.body,
-                    "createdAt": a.created_at,
-                    "state": a.state,
-                    "file": a.file,
-                    "line": a.line,
-                }
-                for a in self.review_activity
-            ],
-            "commits": [
-                {
-                    "sha": c.sha,
-                    "message": c.message,
-                    "author": c.author,
-                    "date": c.date,
-                    "htmlUrl": c.html_url,
-                    "additions": c.additions,
-                    "deletions": c.deletions,
-                    "files": [
-                        {
-                            "filename": f.filename,
-                            "status": f.status,
-                            "additions": f.additions,
-                            "deletions": f.deletions,
-                            "patch": f.patch,
-                            "previousFilename": f.previous_filename,
-                            "patchUnavailable": f.patch_unavailable,
-                        }
-                        for f in c.files
-                    ],
-                }
-                for c in self.commits
-            ],
-            "focusAreas": [
-                {
-                    "rank": f.rank,
-                    "area": f.area,
-                    "reason": f.reason,
-                    "severity": f.severity,
-                    "files": f.files,
-                }
-                for f in self.focus_areas
-            ],
-            "dimensions": [
-                {
-                    "name": d.name,
-                    "score": d.score,
-                    "summary": d.summary,
-                    "findings": [
-                        {
-                            "id": f.id,
-                            "category": f.category,
-                            "severity": f.severity,
-                            "title": f.title,
-                            "description": f.description,
-                            "evidence": f.evidence,
-                        }
-                        for f in d.findings
-                    ],
-                }
-                for d in self.dimensions
-            ],
+            "reviewActivity": [_review_activity_to_dict(a) for a in self.review_activity],
+            "commits": [_commit_to_dict(c) for c in self.commits],
+            "focusAreas": [_focus_area_to_dict(f) for f in self.focus_areas],
+            "dimensions": [_dimension_to_dict(d) for d in self.dimensions],
             "generatedAt": self.generated_at,
             "aiProvider": self.ai_provider,
             "aiSummariesUsed": self.ai_summaries_used,

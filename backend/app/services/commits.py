@@ -1,10 +1,12 @@
+"""Fetch PR commits with per-file patches and enrich missing diffs."""
+
 from __future__ import annotations
 
 import asyncio
 from typing import Any
 
-from app.services.diff import content_to_add_patch, content_to_remove_patch, make_unified_diff
 from app.services.github import GitHubClient
+from app.services.patch_enrichment import backfill_file_patch, fetch_compare_patches
 
 
 def _format_commit(c: dict[str, Any]) -> dict[str, Any]:
@@ -50,17 +52,11 @@ async def _fill_missing_patches(
     parent_sha = parents[0].get("sha") if parents else None
     sha = commit_detail.get("sha", "")
 
-    compare_patches: dict[str, str] = {}
-    if parent_sha and sha:
-        try:
-            compare = await gh.compare_commits(owner, repo, parent_sha, sha)
-            compare_patches = {
-                f["filename"]: f.get("patch") or ""
-                for f in compare.get("files", [])
-                if f.get("patch")
-            }
-        except Exception:
-            pass
+    compare_patches = (
+        await fetch_compare_patches(gh, owner, repo, parent_sha, sha)
+        if parent_sha and sha
+        else {}
+    )
 
     for entry in formatted["files"]:
         if entry["patch"]:
@@ -69,31 +65,20 @@ async def _fill_missing_patches(
             entry["patch"] = compare_patches[entry["filename"]]
             continue
 
-        filename = entry["filename"]
-        status = entry["status"]
-        prev_name = entry.get("previousFilename") or filename
-
-        try:
-            if status == "added" and sha:
-                content = await gh.get_file_text(owner, repo, filename, sha)
-                if content is not None:
-                    entry["patch"] = content_to_add_patch(filename, content)
-                    continue
-            if status == "removed" and parent_sha:
-                content = await gh.get_file_text(owner, repo, prev_name, parent_sha)
-                if content is not None:
-                    entry["patch"] = content_to_remove_patch(prev_name, content)
-                    continue
-            if status in ("modified", "renamed", "changed") and parent_sha and sha:
-                old = await gh.get_file_text(owner, repo, prev_name, parent_sha)
-                new = await gh.get_file_text(owner, repo, filename, sha)
-                if old is not None and new is not None:
-                    entry["patch"] = make_unified_diff(old, new, filename)
-                    continue
-        except Exception:
-            pass
-
-        entry["patchUnavailable"] = True
+        patch = await backfill_file_patch(
+            gh,
+            owner,
+            repo,
+            filename=entry["filename"],
+            status=entry["status"],
+            base_sha=parent_sha,
+            head_sha=sha,
+            previous_filename=entry.get("previousFilename") or entry["filename"],
+        )
+        if patch:
+            entry["patch"] = patch
+        else:
+            entry["patchUnavailable"] = True
 
 
 async def fetch_pr_commits_detailed(gh: GitHubClient, owner: str, repo: str, number: int) -> list[dict[str, Any]]:
@@ -124,16 +109,7 @@ async def enrich_pr_file_patches(
     if not base_sha or not head_sha:
         return
 
-    compare_patches: dict[str, str] = {}
-    try:
-        compare = await gh.compare_commits(owner, repo, base_sha, head_sha)
-        compare_patches = {
-            f["filename"]: f.get("patch") or ""
-            for f in compare.get("files", [])
-            if f.get("patch")
-        }
-    except Exception:
-        pass
+    compare_patches = await fetch_compare_patches(gh, owner, repo, base_sha, head_sha)
 
     for f in files:
         if f.patch:
@@ -141,19 +117,15 @@ async def enrich_pr_file_patches(
         if f.filename in compare_patches:
             f.patch = compare_patches[f.filename]
             continue
-        try:
-            if f.status == "added":
-                content = await gh.get_file_text(owner, repo, f.filename, head_sha)
-                if content is not None:
-                    f.patch = content_to_add_patch(f.filename, content)
-            elif f.status == "removed":
-                content = await gh.get_file_text(owner, repo, f.filename, base_sha)
-                if content is not None:
-                    f.patch = content_to_remove_patch(f.filename, content)
-            elif f.status in ("modified", "renamed", "changed"):
-                old = await gh.get_file_text(owner, repo, f.filename, base_sha)
-                new = await gh.get_file_text(owner, repo, f.filename, head_sha)
-                if old is not None and new is not None:
-                    f.patch = make_unified_diff(old, new, f.filename)
-        except Exception:
-            pass
+
+        patch = await backfill_file_patch(
+            gh,
+            owner,
+            repo,
+            filename=f.filename,
+            status=f.status,
+            base_sha=base_sha,
+            head_sha=head_sha,
+        )
+        if patch:
+            f.patch = patch

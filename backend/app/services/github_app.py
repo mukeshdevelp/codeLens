@@ -1,23 +1,17 @@
-"""GitHub App authentication — JWT + installation access tokens.
-
-Integrated for production because OAuth user tokens cannot receive organization webhooks
-or create Check Runs on behalf of the app. The GitHub App is the standard way to:
-- Verify and process ``pull_request`` webhooks
-- Post Check Runs visible on the PR checks tab
-- Post PR summary comments without a user session
-"""
+"""GitHub App authentication — JWT + installation access tokens."""
 
 from __future__ import annotations
 
 import time
+from datetime import datetime
 from typing import Any
 
 import httpx
 from jose import jwt
 
 from app.config import settings
+from app.services.github_http import GITHUB_API_BASE, github_api_headers
 
-# In-memory installation token cache: installation_id -> (token, expires_at_epoch)
 _token_cache: dict[int, tuple[str, int]] = {}
 
 
@@ -41,32 +35,30 @@ def create_app_jwt() -> str:
     return jwt.encode(payload, _load_private_key(), algorithm="RS256")
 
 
+async def _app_request(method: str, path: str, *, json: dict | None = None) -> dict[str, Any]:
+    app_jwt = create_app_jwt()
+    async with httpx.AsyncClient(timeout=30) as client:
+        res = await client.request(
+            method,
+            f"{GITHUB_API_BASE}{path}",
+            headers=github_api_headers(app_jwt),
+            json=json,
+        )
+        res.raise_for_status()
+        return res.json()
+
+
 async def get_installation_access_token(installation_id: int) -> str:
     """Exchange app JWT for an installation token; cached until 5 minutes before expiry."""
     cached = _token_cache.get(installation_id)
     if cached and cached[1] > int(time.time()) + 300:
         return cached[0]
 
-    app_jwt = create_app_jwt()
-    async with httpx.AsyncClient(timeout=30) as client:
-        res = await client.post(
-            f"https://api.github.com/app/installations/{installation_id}/access_tokens",
-            headers={
-                "Authorization": f"Bearer {app_jwt}",
-                "Accept": "application/vnd.github+json",
-                "X-GitHub-Api-Version": "2022-11-28",
-            },
-        )
-        res.raise_for_status()
-        data = res.json()
-
+    data = await _app_request("POST", f"/app/installations/{installation_id}/access_tokens")
     token = data["token"]
     expires_at = data.get("expires_at")
-    # GitHub returns ISO timestamp; cache ~1 hour default
     expiry_epoch = int(time.time()) + 3500
     if expires_at:
-        from datetime import datetime
-
         try:
             expiry_epoch = int(datetime.fromisoformat(expires_at.replace("Z", "+00:00")).timestamp())
         except ValueError:
@@ -77,15 +69,4 @@ async def get_installation_access_token(installation_id: int) -> str:
 
 async def get_app_info() -> dict[str, Any]:
     """Fetch GitHub App metadata (health check for production monitoring)."""
-    app_jwt = create_app_jwt()
-    async with httpx.AsyncClient(timeout=30) as client:
-        res = await client.get(
-            "https://api.github.com/app",
-            headers={
-                "Authorization": f"Bearer {app_jwt}",
-                "Accept": "application/vnd.github+json",
-                "X-GitHub-Api-Version": "2022-11-28",
-            },
-        )
-        res.raise_for_status()
-        return res.json()
+    return await _app_request("GET", "/app")

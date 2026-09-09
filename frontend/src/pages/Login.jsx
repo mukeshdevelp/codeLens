@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { loginUrl } from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import LoadingSpinner from "../components/ui/LoadingSpinner";
 
 const AUTH_ERRORS = {
   invalid_oauth_state: "GitHub sign-in was interrupted. Please try again.",
@@ -22,7 +23,7 @@ export default function Login() {
       .catch(() => {});
   }, []);
 
-  if (loading) return <div className="page-center"><div className="spinner" /></div>;
+  if (loading) return <LoadingSpinner />;
   if (user) return <Navigate to="/dashboard" replace />;
 
   return (

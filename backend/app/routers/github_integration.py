@@ -1,36 +1,28 @@
-"""GitHub production integration API — post comments, embed tokens, install status.
-
-Exposes user-facing actions that bridge the web app and github.com (post summary,
-generate embed link for Check details). Webhooks live in ``routers/webhooks.py``.
-"""
+"""GitHub production integration API — post comments, embed tokens, install status."""
 
 from __future__ import annotations
 
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.db import get_db
-from app.db.models import PrReport, User
+from app.db.models import User
 from app.routers.auth import get_current_user
-from app.services.embed_tokens import embed_token, verify_embed_token
+from app.services.embed_tokens import build_embed_url, embed_token, signed_embed_url, verify_embed_token
 from app.services.github import GitHubClient
 from app.services.github_app import get_app_info
 from app.services.pr_comments import format_pr_comment, post_pr_summary_comment
+from app.services.reports import get_pr_report_row, load_report_dict
 
 router = APIRouter(prefix="/api/github", tags=["github-integration"])
 
 
 @router.get("/status")
 async def github_integration_status() -> dict[str, Any]:
-    """
-    Production health: which GitHub integration features are configured.
-
-    Used by ops and the frontend settings panel before enabling Checks/comments.
-    """
+    """Production health: which GitHub integration features are configured."""
     app_ok = False
     app_name = None
     if settings.github_app_configured():
@@ -58,6 +50,20 @@ async def github_integration_status() -> dict[str, Any]:
     }
 
 
+async def _require_report_row(
+    db: AsyncSession,
+    owner: str,
+    repo: str,
+    number: int,
+    *,
+    analyze_first_message: str = "Report not found",
+) -> tuple[Any, dict[str, Any]]:
+    row = await get_pr_report_row(db, owner, repo, number)
+    if not row:
+        raise HTTPException(status_code=404, detail=analyze_first_message)
+    return row, load_report_dict(row)
+
+
 @router.post("/repos/{owner}/{repo}/pulls/{number}/post-summary")
 async def post_summary_to_github(
     owner: str,
@@ -67,33 +73,11 @@ async def post_summary_to_github(
     db: Annotated[AsyncSession, Depends(get_db)],
     force: bool = Query(False, description="Post even if a summary was already posted"),
 ) -> dict[str, Any]:
-    """
-    Post CodeLens markdown summary as a PR comment on github.com.
-
-    Requires OAuth token with repo scope. Records ``pr_review_posts`` to prevent duplicates.
-    """
+    """Post CodeLens markdown summary as a PR comment on github.com."""
     if not settings.enable_github_pr_comments:
         raise HTTPException(status_code=400, detail="PR comments disabled (ENABLE_GITHUB_PR_COMMENTS)")
 
-    result = await db.execute(
-        select(PrReport).where(
-            PrReport.owner == owner,
-            PrReport.repo == repo,
-            PrReport.pr_number == number,
-        )
-    )
-    row = result.scalar_one_or_none()
-    if not row:
-        raise HTTPException(status_code=404, detail="Analyze PR first")
-
-    import json
-
-    report = json.loads(row.report_json)
-    embed_url = None
-    if settings.embed_configured():
-        token = embed_token(owner, repo, number, settings.embed_shared_secret)
-        embed_url = f"{settings.frontend_url.rstrip('/')}/embed/repos/{owner}/{repo}/pulls/{number}?token={token}"
-
+    row, report = await _require_report_row(db, owner, repo, number, analyze_first_message="Analyze PR first")
     gh = GitHubClient(user.access_token)
     return await post_pr_summary_comment(
         db,
@@ -104,7 +88,7 @@ async def post_summary_to_github(
         report,
         row,
         user_id=user.id,
-        embed_url=embed_url,
+        embed_url=signed_embed_url(owner, repo, number),
         force=force,
     )
 
@@ -120,8 +104,7 @@ async def get_embed_url(
     if not settings.embed_configured():
         raise HTTPException(status_code=400, detail="EMBED_SHARED_SECRET not configured")
     token = embed_token(owner, repo, number, settings.embed_shared_secret)
-    url = f"{settings.frontend_url.rstrip('/')}/embed/repos/{owner}/{repo}/pulls/{number}?token={token}"
-    return {"embedUrl": url}
+    return {"embedUrl": build_embed_url(owner, repo, number, token=token)}
 
 
 @router.get("/embed/{owner}/{repo}/pulls/{number}/report")
@@ -132,30 +115,14 @@ async def get_embed_report(
     db: Annotated[AsyncSession, Depends(get_db)],
     token: str = Query(..., description="HMAC embed token"),
 ) -> dict[str, Any]:
-    """
-    Read-only report for github.com embed (no OAuth cookie).
-
-    Secured by ``EMBED_SHARED_SECRET``; used by ``EmbedReport`` iframe page.
-    """
+    """Read-only report for github.com embed (no OAuth cookie)."""
     if not settings.embed_configured():
         raise HTTPException(status_code=503, detail="Embed not configured")
     if not verify_embed_token(owner, repo, number, settings.embed_shared_secret, token):
         raise HTTPException(status_code=403, detail="Invalid embed token")
 
-    result = await db.execute(
-        select(PrReport).where(
-            PrReport.owner == owner,
-            PrReport.repo == repo,
-            PrReport.pr_number == number,
-        )
-    )
-    row = result.scalar_one_or_none()
-    if not row:
-        raise HTTPException(status_code=404, detail="Report not found")
-
-    import json
-
-    return json.loads(row.report_json)
+    _, report = await _require_report_row(db, owner, repo, number)
+    return report
 
 
 @router.get("/repos/{owner}/{repo}/pulls/{number}/comment-preview")
@@ -167,17 +134,5 @@ async def preview_pr_comment(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, str]:
     """Preview markdown that would be posted to GitHub (no side effects)."""
-    result = await db.execute(
-        select(PrReport).where(
-            PrReport.owner == owner,
-            PrReport.repo == repo,
-            PrReport.pr_number == number,
-        )
-    )
-    row = result.scalar_one_or_none()
-    if not row:
-        raise HTTPException(status_code=404, detail="Report not found")
-    import json
-
-    report = json.loads(row.report_json)
+    _, report = await _require_report_row(db, owner, repo, number)
     return {"markdown": format_pr_comment(report)}

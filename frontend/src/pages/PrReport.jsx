@@ -1,11 +1,18 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { api } from "../api/client";
 import AiSourceBadge, { PanelHeading } from "../components/AiSourceBadge";
 import CommitWalkthrough from "../components/CommitWalkthrough";
 import FileWalkthrough from "../components/FileWalkthrough";
 import Layout from "../components/Layout";
+import AiFooterBreakdown from "../components/pr/AiFooterBreakdown";
+import PrStats from "../components/pr/PrStats";
+import RiskBadge from "../components/pr/RiskBadge";
 import ReviewDiscussion from "../components/ReviewDiscussion";
+import Breadcrumb from "../components/ui/Breadcrumb";
+import ErrorBanner from "../components/ui/ErrorBanner";
+import LoadingSpinner from "../components/ui/LoadingSpinner";
+import { isStaleReport } from "../utils/reportSchema";
 
 const TABS = [
   { id: "overview", label: "Overview" },
@@ -14,49 +21,6 @@ const TABS = [
   { id: "discussion", label: "Discussion" },
   { id: "analysis", label: "Risk analysis" },
 ];
-
-function RiskBadge({ level, score }) {
-  return (
-    <div className={`risk-banner risk-${level}`}>
-      <span>{level.toUpperCase()} RISK</span>
-      <strong>{score}/100</strong>
-    </div>
-  );
-}
-
-function AiFooterBreakdown({ report }) {
-  if (!report?.aiProvider) return null;
-  const b = report.aiSummaryBreakdown || {};
-  const parts = [];
-  if (b.executiveSummary === "ai") parts.push("executive");
-  if (b.prOverview === "ai") parts.push("PR overview");
-  if (b.discussionSummary === "ai") parts.push("discussion");
-  if (b.fileChanges > 0) parts.push(`${b.fileChanges} file${b.fileChanges !== 1 ? "s" : ""}`);
-  return (
-    <>
-      {" "}· AI ({report.aiProvider}): {parts.length ? parts.join(", ") : "none"}
-      {" "}({report.aiSummariesUsed} total)
-    </>
-  );
-}
-
-function PrStats({ pr }) {
-  if (!pr) return null;
-  return (
-    <div className="pr-stats">
-      {pr.author && <span>by @{pr.author}</span>}
-      {pr.changedFiles != null && <span>{pr.changedFiles} files</span>}
-      {pr.commitCount != null && pr.commitCount > 0 && (
-        <span>{pr.commitCount} commit{pr.commitCount !== 1 ? "s" : ""}</span>
-      )}
-      {pr.additions != null && <span className="diff-stat-add">+{pr.additions}</span>}
-      {pr.deletions != null && <span className="diff-stat-del">-{pr.deletions}</span>}
-      {pr.htmlUrl && (
-        <a href={pr.htmlUrl} target="_blank" rel="noreferrer" className="btn ghost btn-sm">View on GitHub</a>
-      )}
-    </div>
-  );
-}
 
 export default function PrReport() {
   const { owner, repo, number } = useParams();
@@ -75,23 +39,6 @@ export default function PrReport() {
   const [mergeMethod, setMergeMethod] = useState("merge");
   const [successMsg, setSuccessMsg] = useState("");
   const prNumber = Number(number);
-
-  const isStaleReport = (data, status) => {
-    if (!data) return true;
-    if (!data.fileChanges?.length && (data.pr?.changedFiles ?? 0) > 0) return true;
-    if (!("aiProvider" in data)) return true;
-    if (!("commits" in data)) return true;
-    if (data.commits?.length > 0 && !("files" in data.commits[0])) return true;
-    if (!("discussionSummarySource" in data)) return true;
-    if (!("prOverviewSource" in data)) return true;
-    if (data.fileChanges?.some((f) => !("summarySource" in f))) return true;
-    if (status?.configured) {
-      const hasAiFileSummary = data.fileChanges?.some((f) => f.summarySource === "ai");
-      if (!hasAiFileSummary || !data.aiSummariesUsed) return true;
-      if (data.fileChanges?.some((f) => f.summarySource === "ai" && !f.summarizedAt)) return true;
-    }
-    return false;
-  };
 
   const runAnalyze = async (opts = {}) => {
     setAnalyzing(true);
@@ -145,6 +92,9 @@ export default function PrReport() {
     }
   };
 
+  const mergeSuccessMessage = (res, prefix = "Merged") =>
+    `${prefix} into ${res.baseRef || prActions?.baseRef || "base branch"}.`;
+
   const mergePr = async (method = mergeMethod) => {
     setMerging(true);
     setError("");
@@ -152,7 +102,7 @@ export default function PrReport() {
     setShowMergeConfirm(false);
     try {
       const res = await api.mergePr(owner, repo, prNumber, method);
-      setSuccessMsg(`Merged into ${res.baseRef || prActions?.baseRef || "base branch"}.`);
+      setSuccessMsg(mergeSuccessMessage(res));
       await refreshPrActions();
     } catch (e) {
       setError(e.message);
@@ -172,7 +122,7 @@ export default function PrReport() {
       }
       const res = await api.mergePr(owner, repo, prNumber, mergeMethod);
       const prefix = prActions?.canApprove ? "Approved and merged" : "Merged";
-      setSuccessMsg(`${prefix} into ${res.baseRef || prActions?.baseRef || "base branch"}.`);
+      setSuccessMsg(mergeSuccessMessage(res, prefix));
       await refreshPrActions();
     } catch (e) {
       setError(e.message);
@@ -226,13 +176,13 @@ export default function PrReport() {
 
   return (
     <Layout title={`PR #${number}`}>
-      <div className="breadcrumb">
-        <Link to="/dashboard">Repositories</Link>
-        <span>/</span>
-        <Link to={`/repos/${owner}/${repo}`}>{owner}/{repo}</Link>
-        <span>/</span>
-        <span>#{number}</span>
-      </div>
+      <Breadcrumb
+        items={[
+          { label: "Repositories", to: "/dashboard" },
+          { label: `${owner}/${repo}`, to: `/repos/${owner}/${repo}` },
+          { label: `#${number}` },
+        ]}
+      />
 
       <div className="report-header">
         <div>
@@ -241,9 +191,7 @@ export default function PrReport() {
           <PrStats pr={report?.pr} />
         </div>
         <div className="report-header-actions">
-          {prActions?.merged && (
-            <span className="pr-status-badge merged">Merged</span>
-          )}
+          {prActions?.merged && <span className="pr-status-badge merged">Merged</span>}
           {prActions && prActions.state === "closed" && !prActions.merged && (
             <span className="pr-status-badge closed">Closed</span>
           )}
@@ -300,8 +248,8 @@ export default function PrReport() {
           )}
         </p>
       )}
-      {(loading || analyzing) && <div className="page-center"><div className="spinner" /></div>}
-      {error && <div className="error-banner">{error}</div>}
+      {(loading || analyzing) && <LoadingSpinner />}
+      <ErrorBanner message={error} />
       {successMsg && <div className="success-banner">{successMsg}</div>}
       {prIsOpen && mergeBlockedReason && !error && (
         <p className="muted merge-hint">{mergeBlockedReason}</p>
@@ -349,22 +297,14 @@ export default function PrReport() {
           {tab === "overview" && (
             <div className="overview-section">
               <section className="panel overview-panel">
-                <PanelHeading
-                  title="PR summary"
-                  source={report.prOverviewSource}
-                  provider={report.aiProvider}
-                />
+                <PanelHeading title="PR summary" source={report.prOverviewSource} provider={report.aiProvider} />
                 <div className="overview-highlight">
                   <p className="pr-overview">{report.prOverview || report.executiveSummary}</p>
                 </div>
               </section>
 
               <section className="panel overview-panel">
-                <PanelHeading
-                  title="Executive summary"
-                  source={report.executiveSummarySource}
-                  provider={report.aiProvider}
-                />
+                <PanelHeading title="Executive summary" source={report.executiveSummarySource} provider={report.aiProvider} />
                 <div className="overview-highlight overview-highlight-exec">
                   <p className="overview-exec-text">{report.executiveSummary}</p>
                 </div>
@@ -424,10 +364,7 @@ export default function PrReport() {
               <p className="muted panel-intro">
                 All commits on this branch with per-file diffs — green for additions, red for deletions.
               </p>
-              <CommitWalkthrough
-                commits={report.commits || []}
-                prHtmlUrl={report.pr?.htmlUrl}
-              />
+              <CommitWalkthrough commits={report.commits || []} prHtmlUrl={report.pr?.htmlUrl} />
             </section>
           )}
 
@@ -441,10 +378,7 @@ export default function PrReport() {
               <p className="muted panel-intro">
                 Summarized review comments, feedback, and conversation on this PR.
               </p>
-              <ReviewDiscussion
-                summary={report.discussionSummary}
-                activity={report.reviewActivity}
-              />
+              <ReviewDiscussion summary={report.discussionSummary} activity={report.reviewActivity} />
             </section>
           )}
 

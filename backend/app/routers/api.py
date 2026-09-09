@@ -2,19 +2,21 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 import json
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.analyzers.service import analyze_pull_request
-from app.db import get_db
-from app.db.models import PrReport, User
-from app.routers.auth import get_current_user
+from app.analyzers.types import FileChange
 from app.config import settings
+from app.db import get_db
+from app.db.models import User
+from app.routers.auth import get_current_user
 from app.services.analyze_pipeline import run_pr_analysis
+from app.services.reports import get_pr_report_row, load_report_dict
 from app.services.github import (
     GitHubClient,
     can_user_approve_pr,
@@ -59,11 +61,6 @@ async def ai_test():
 @router.post("/demo/analyze")
 async def demo_analyze():
     """Analyze fixture PR without GitHub auth — for hackathon demo."""
-    import json
-    from pathlib import Path
-
-    from app.analyzers.types import FileChange
-
     fixture_path = Path(__file__).resolve().parents[3] / "fixtures" / "demo-pr.json"
     data = json.loads(fixture_path.read_text())
     files = [FileChange(**f) for f in data["files"]]
@@ -147,13 +144,10 @@ async def get_report(
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
-    result = await db.execute(
-        select(PrReport).where(PrReport.owner == owner, PrReport.repo == repo, PrReport.pr_number == number)
-    )
-    row = result.scalar_one_or_none()
+    row = await get_pr_report_row(db, owner, repo, number)
     if not row:
         raise HTTPException(status_code=404, detail="Report not found. Run analyze first.")
-    return json.loads(row.report_json)
+    return load_report_dict(row)
 
 
 @router.get("/repos/{owner}/{repo}/pulls/{number}/actions")
